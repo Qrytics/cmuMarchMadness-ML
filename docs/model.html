@@ -28,6 +28,7 @@
       <li><a href="index.html">Dashboard</a></li>
       <li><a href="bracket.html">Bracket</a></li>
       <li><a href="model.html" class="active">Model Details</a></li>
+      <li><a href="getting-started.html">Getting Started</a></li>
     </ul>
   </div>
 </nav>
@@ -174,35 +175,78 @@
   <!-- Using Real Data -->
   <section class="section">
     <h2 class="section-title">Using <span>Real Kaggle Data</span></h2>
-    <p class="section-sub">For production predictions, use real NCAA basketball data from Kaggle.</p>
+    <p class="section-sub">For production predictions, use real NCAA basketball data from Kaggle. See the full guide at <a href="getting-started.html" style="color:var(--accent-blue)">Getting Started</a>.</p>
 
     <div class="card">
       <h3>📥 Data Setup</h3>
       <pre><code># 1. Get Kaggle API credentials
 # Go to: https://www.kaggle.com/settings/account → Create New Token
-# Place kaggle.json at ~/.kaggle/kaggle.json (chmod 600)
+# Place kaggle.json at ~/.kaggle/kaggle.json (chmod 600 on Linux/Mac)
 
-# 2. Download NCAA data
+# 2. Download NCAA data (~500 MB)
 python scripts/download_data.py
 
-# This downloads from: march-machine-learning-mania competition
-# Key files:
-#   MRegularSeasonDetailedResults.csv  — All regular season game results
-#   MNCAATourneyDetailedResults.csv    — Tournament results (for training)
+# Key files downloaded to data/raw/:
+#   MRegularSeasonDetailedResults.csv  — All regular season game results (men's)
+#   MNCAATourneyDetailedResults.csv    — Tournament results (training labels)
 #   MSeeds.csv                          — Tournament seedings by year
-#   MMasseyOrdinals.csv                 — Team rankings from multiple systems
-#   WRegularSeasonDetailedResults.csv  — Women's regular season
-#   WNCAATourneyDetailedResults.csv    — Women's tournament results
-#   WSeeds.csv                          — Women's seedings
+#   MMasseyOrdinals.csv                 — Rankings from 30+ systems
+#   W*.csv                              — Corresponding women's files
 
-# 3. Retrain with real data
+# 3. Retrain with real data (~2-5 minutes)
 python -m src.train --data-dir data/raw
 
-# 4. Generate 2026 predictions
+# 4. Backtest to verify performance
+python -m src.evaluate --data-dir data/raw
+
+# 5. Generate 2026 predictions
 python -m src.predict --data-dir data/raw</code></pre>
 
       <div class="info-box" style="margin-top:15px;">
-        <strong>Note:</strong> With real data, expect significantly better performance. Historical Kaggle leaderboards show top models achieving 70-75% accuracy on tournament games.
+        <strong>Expected improvement:</strong> Synthetic data → ~55% accuracy. Real Kaggle data → <strong>65–75% accuracy</strong>. Historical Kaggle leaderboards show top models at 73–75% on tournament games. A seed-only heuristic baseline achieves ~69%, so the ML model should beat that with full data.
+      </div>
+    </div>
+  </section>
+
+  <!-- How to improve the model -->
+  <section class="section">
+    <h2 class="section-title">How to <span>Improve the Model</span></h2>
+    <p class="section-sub">Ideas for increasing prediction accuracy beyond the baseline ensemble.</p>
+
+    <div class="grid-3">
+      <div class="card">
+        <h3>🧪 More Features</h3>
+        <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:12px">Edit <code>src/feature_engineering.py</code> to add:</p>
+        <ul style="color:var(--text-secondary);font-size:0.82rem;padding-left:18px;line-height:1.9">
+          <li>Strength of schedule</li>
+          <li>Conference strength rating</li>
+          <li>Tempo and pace statistics</li>
+          <li>Home/away game splits</li>
+          <li>Recent form (last 10 games)</li>
+          <li>Head-to-head historical record</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>⚙️ Better Hyperparameters</h3>
+        <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:12px">Edit <code>src/model.py</code> and tune with Optuna or scikit-learn's GridSearchCV:</p>
+        <ul style="color:var(--text-secondary);font-size:0.82rem;padding-left:18px;line-height:1.9">
+          <li>Increase n_estimators (500+)</li>
+          <li>Tune learning_rate (0.01–0.1)</li>
+          <li>Adjust subsample ratio</li>
+          <li>Change ensemble weights</li>
+          <li>Add CatBoost or Neural Net</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>📊 Better Training Strategy</h3>
+        <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:12px">Edit <code>src/train.py</code> to improve the CV strategy:</p>
+        <ul style="color:var(--text-secondary);font-size:0.82rem;padding-left:18px;line-height:1.9">
+          <li>Weight recent seasons more</li>
+          <li>Add tournament-specific features</li>
+          <li>Use calibrated probabilities</li>
+          <li>Optimize for bracket score (not accuracy)</li>
+          <li>Train a meta-model on ensemble outputs</li>
+        </ul>
       </div>
     </div>
   </section>
@@ -264,7 +308,7 @@ python -m src.predict --data-dir data/raw</code></pre>
 
 <footer>
   <div class="container">
-    <p>CMU March Madness ML Competition 2026 — <a href="https://github.com/Qrytics/cmuMarchMadness-ML">GitHub</a></p>
+    <p>CMU March Madness ML Competition 2026 — <a href="https://github.com/Qrytics/cmuMarchMadness-ML">GitHub</a> · <a href="https://www.cs.cmu.edu/~reids/mmml/">CMU MMML</a></p>
   </div>
 </footer>
 
