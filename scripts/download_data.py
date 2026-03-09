@@ -16,8 +16,8 @@ RAW_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
 os.makedirs(RAW_DIR, exist_ok=True)
 
 # Kaggle competition slugs (updated annually)
-COMPETITION_MEN = "march-machine-learning-mania-2024"
-COMPETITION_WOMEN = "march-machine-learning-mania-2024"
+COMPETITION_MEN = "march-machine-learning-mania-2026"
+COMPETITION_WOMEN = "march-machine-learning-mania-2026"
 
 
 def check_kaggle():
