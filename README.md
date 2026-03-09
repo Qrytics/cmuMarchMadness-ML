@@ -351,6 +351,6 @@ WTeamID,LTeamID
 ## 🏆 Competition Resources
 
 - **[CMU MMML Competition Page](https://www.cs.cmu.edu/~reids/mmml/)** — Official rules and submission instructions
-- **[Kaggle March Machine Learning Mania](https://www.kaggle.com/c/march-machine-learning-mania-2024)** — Training data source
+- **[Kaggle March Machine Learning Mania](https://www.kaggle.com/c/march-machine-learning-mania-2026)** — Training data source
 - **[Live Dashboard](https://qrytics.github.io/cmuMarchMadness-ML/)** — Model metrics and bracket simulator
 - **Deadline: March 17, 2026 at 12:00 PM EDT**
