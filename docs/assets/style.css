@@ -302,6 +302,37 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
 .info-box strong { color: var(--accent-blue); }
 
+/* Warning and success boxes */
+.warn-box {
+  background: rgba(245,197,24,0.06);
+  border: 1px solid rgba(245,197,24,0.2);
+  border-left: 4px solid var(--cmu-gold);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 15px 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.warn-box strong { color: var(--cmu-gold); }
+
+.success-box {
+  background: rgba(0,212,170,0.06);
+  border: 1px solid rgba(0,212,170,0.2);
+  border-left: 4px solid var(--accent-green);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 15px 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.success-box strong { color: var(--accent-green); }
+
+/* Mobile nav improvements */
+@media (max-width: 900px) {
+  nav ul { gap: 2px; }
+  nav ul li a { padding: 6px 8px; font-size: 0.8rem; }
+}
+
 /* Footer */
 footer {
   background: var(--bg-card);

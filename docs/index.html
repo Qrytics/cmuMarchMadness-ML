@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CMU March Madness ML — Model Dashboard</title>
+  <title>CMU March Madness ML — Dashboard</title>
   <link rel="stylesheet" href="assets/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
@@ -16,6 +16,66 @@
     .step-num { background: var(--cmu-red); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
     .step-content h4 { color: white; margin-bottom: 5px; }
     .step-content p { font-size: 0.88rem; color: var(--text-secondary); }
+
+    /* Countdown */
+    .countdown-banner {
+      background: linear-gradient(135deg, rgba(196,18,48,0.15), rgba(245,197,24,0.1));
+      border: 1px solid rgba(196,18,48,0.4);
+      border-radius: 10px;
+      padding: 20px 25px;
+      margin: 20px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .countdown-label { color: var(--cmu-gold); font-weight: 700; font-size: 0.9rem; letter-spacing: 1px; text-transform: uppercase; }
+    .countdown-timer { display: flex; gap: 15px; }
+    .countdown-unit { text-align: center; }
+    .countdown-num { font-size: 2rem; font-weight: 800; color: white; line-height: 1; }
+    .countdown-unit-label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+    .countdown-deadline { font-size: 0.85rem; color: var(--text-secondary); }
+
+    /* Status banner */
+    .status-banner {
+      background: rgba(245,197,24,0.08);
+      border: 1px solid rgba(245,197,24,0.3);
+      border-left: 4px solid var(--cmu-gold);
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin: 15px 0;
+      font-size: 0.9rem;
+    }
+    .status-banner.success {
+      background: rgba(0,212,170,0.08);
+      border-color: rgba(0,212,170,0.3);
+      border-left-color: var(--accent-green);
+    }
+    .status-banner strong { color: var(--cmu-gold); }
+    .status-banner.success strong { color: var(--accent-green); }
+
+    /* Quick action cards */
+    .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
+    .action-card {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+      display: block;
+    }
+    .action-card:hover { border-color: var(--cmu-red); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(196,18,48,0.2); }
+    .action-card .action-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .action-card .action-title { font-weight: 700; color: white; margin-bottom: 6px; }
+    .action-card .action-desc { font-size: 0.82rem; color: var(--text-secondary); }
+    .action-card .action-tag { display: inline-block; margin-top: 10px; font-size: 0.72rem; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+    .tag-green { background: rgba(0,212,170,0.15); color: var(--accent-green); border: 1px solid rgba(0,212,170,0.3); }
+    .tag-blue { background: rgba(79,172,254,0.15); color: var(--accent-blue); border: 1px solid rgba(79,172,254,0.3); }
+    .tag-gold { background: rgba(245,197,24,0.15); color: var(--cmu-gold); border: 1px solid rgba(245,197,24,0.3); }
+    .tag-red { background: rgba(196,18,48,0.15); color: #ff6b6b; border: 1px solid rgba(196,18,48,0.3); }
   </style>
 </head>
 <body>
@@ -27,13 +87,14 @@
       <li><a href="index.html" class="active">Dashboard</a></li>
       <li><a href="bracket.html">Bracket</a></li>
       <li><a href="model.html">Model Details</a></li>
+      <li><a href="getting-started.html">Getting Started</a></li>
     </ul>
   </div>
 </nav>
 
 <div class="hero">
   <h1>🏀 March Madness ML</h1>
-  <p>ML-powered NCAA tournament bracket predictions using XGBoost + LightGBM ensemble. Trained on 15+ years of historical basketball data.</p>
+  <p>ML-powered NCAA tournament bracket predictions using an XGBoost + LightGBM + Logistic Regression ensemble. Trained on 15+ years of basketball data.</p>
   <div class="hero-badges">
     <span class="badge badge-red">CMU Competition 2026</span>
     <span class="badge badge-outline">Men's + Women's</span>
@@ -42,6 +103,69 @@
 </div>
 
 <div class="container">
+
+  <!-- Countdown Banner -->
+  <div class="countdown-banner">
+    <div>
+      <div class="countdown-label">⏰ Submission Deadline</div>
+      <div class="countdown-deadline" style="margin-top:4px">March 17, 2026 · 12:00 PM EDT · <a href="https://www.cs.cmu.edu/~reids/mmml/" style="color:var(--accent-blue)" target="_blank">CMU MMML Competition</a></div>
+    </div>
+    <div class="countdown-timer" id="countdown">
+      <div class="countdown-unit"><div class="countdown-num" id="cd-days">—</div><div class="countdown-unit-label">Days</div></div>
+      <div class="countdown-unit"><div class="countdown-num" id="cd-hours">—</div><div class="countdown-unit-label">Hours</div></div>
+      <div class="countdown-unit"><div class="countdown-num" id="cd-mins">—</div><div class="countdown-unit-label">Mins</div></div>
+      <div class="countdown-unit"><div class="countdown-num" id="cd-secs">—</div><div class="countdown-unit-label">Secs</div></div>
+    </div>
+  </div>
+
+  <!-- Status Banner -->
+  <div class="status-banner">
+    <strong>⚠️ Currently using synthetic training data.</strong> Predictions are valid in format (72,390 + 71,631 rows) but accuracy is ~55%. To reach 65–75% accuracy, <a href="getting-started.html" style="color:var(--cmu-gold)">connect real Kaggle NCAA data →</a>
+  </div>
+
+  <!-- Quick Actions -->
+  <section class="section" style="padding: 30px 0 40px;">
+    <h2 class="section-title">Quick <span>Actions</span></h2>
+    <p class="section-sub">Jump to the most important pages and resources.</p>
+    <div class="action-grid">
+      <a class="action-card" href="getting-started.html">
+        <div class="action-icon">🚀</div>
+        <div class="action-title">Getting Started</div>
+        <div class="action-desc">Step-by-step guide: install, download data, train, predict, submit.</div>
+        <span class="action-tag tag-green">Start here</span>
+      </a>
+      <a class="action-card" href="bracket.html">
+        <div class="action-icon">🏆</div>
+        <div class="action-title">Bracket Simulator</div>
+        <div class="action-desc">See the 2026 predicted bracket and download prediction CSV files.</div>
+        <span class="action-tag tag-blue">Interactive</span>
+      </a>
+      <a class="action-card" href="model.html">
+        <div class="action-icon">🔬</div>
+        <div class="action-title">Model Details</div>
+        <div class="action-desc">Hyperparameters, feature engineering, and the CI/CD pipeline.</div>
+        <span class="action-tag tag-blue">Technical</span>
+      </a>
+      <a class="action-card" href="https://github.com/Qrytics/cmuMarchMadness-ML" target="_blank">
+        <div class="action-icon">💻</div>
+        <div class="action-title">GitHub Repository</div>
+        <div class="action-desc">Source code, model files, and the Actions CI/CD workflows.</div>
+        <span class="action-tag tag-gold">GitHub</span>
+      </a>
+      <a class="action-card" href="data/MTourneyPredictions.csv" download>
+        <div class="action-icon">📥</div>
+        <div class="action-title">Download Men's Predictions</div>
+        <div class="action-desc">MTourneyPredictions.csv — 72,390 rows (all C(381,2) matchup pairs).</div>
+        <span class="action-tag tag-red">Submit this</span>
+      </a>
+      <a class="action-card" href="data/WTourneyPredictions.csv" download>
+        <div class="action-icon">📥</div>
+        <div class="action-title">Download Women's Predictions</div>
+        <div class="action-desc">WTourneyPredictions.csv — 71,631 rows (all C(379,2) matchup pairs).</div>
+        <span class="action-tag tag-red">Submit this</span>
+      </a>
+    </div>
+  </section>
 
   <!-- Key Stats -->
   <section class="section">
@@ -54,18 +178,18 @@
       <div class="stat-tile"><div class="stat-value">72,390</div><div class="stat-label">Men's Predictions</div></div>
       <div class="stat-tile"><div class="stat-value">71,631</div><div class="stat-label">Women's Predictions</div></div>
       <div class="stat-tile"><div class="stat-value">3</div><div class="stat-label">Model Ensemble</div></div>
-      <div class="stat-tile"><div class="stat-value">28</div><div class="stat-label">Features</div></div>
+      <div class="stat-tile"><div class="stat-value">28</div><div class="stat-label">Features per Matchup</div></div>
     </div>
   </section>
 
   <!-- Backtest Performance -->
   <section class="section">
     <h2 class="section-title">Historical <span>Backtest</span></h2>
-    <p class="section-sub">Walk-forward cross-validation: trained on prior seasons, tested on each subsequent season.</p>
+    <p class="section-sub">Walk-forward cross-validation: trained on prior seasons, tested on each subsequent season. No data leakage.</p>
 
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('men')">Men's Tournament</button>
-      <button class="tab-btn" onclick="switchTab('women')">Women's Tournament</button>
+      <button class="tab-btn active" onclick="switchTab('men', this)">Men's Tournament</button>
+      <button class="tab-btn" onclick="switchTab('women', this)">Women's Tournament</button>
     </div>
 
     <div id="menTab" class="tab-panel active">
@@ -95,14 +219,14 @@
     </div>
 
     <div class="info-box">
-      <strong>Note:</strong> These results are from synthetic training data. With real Kaggle NCAA data, top models typically achieve <strong>70–75% accuracy</strong> on tournament games. Connect real Kaggle data (see <a href="model.html" style="color:var(--accent-blue)">Model Details</a>) to unlock production-quality predictions.
+      <strong>Note:</strong> These results are from synthetic training data. With real Kaggle NCAA data, top models typically achieve <strong>70–75% accuracy</strong> on tournament games. Connect real Kaggle data (see <a href="getting-started.html" style="color:var(--accent-blue)">Getting Started</a>) to unlock production-quality predictions.
     </div>
   </section>
 
   <!-- Model Architecture -->
   <section class="section">
     <h2 class="section-title">Model <span>Architecture</span></h2>
-    <p class="section-sub">Ensemble of complementary ML models, each contributing different strengths.</p>
+    <p class="section-sub">Ensemble of three complementary ML models, each contributing different strengths to the final prediction.</p>
 
     <div class="card" style="margin-bottom: 20px;">
       <div class="model-arch">
@@ -171,7 +295,7 @@
   <!-- Feature Importance -->
   <section class="section">
     <h2 class="section-title">Feature <span>Importance</span></h2>
-    <p class="section-sub">Top features driving predictions (averaged across XGBoost and LightGBM).</p>
+    <p class="section-sub">Top features driving predictions (averaged across XGBoost and LightGBM). Higher = more influential.</p>
 
     <div class="grid-2">
       <div class="card">
@@ -188,19 +312,21 @@
   <!-- Scoring System -->
   <section class="section">
     <h2 class="section-title">Scoring <span>System</span></h2>
-    <p class="section-sub">Points are awarded for each correct prediction. A perfect bracket scores 196 points.</p>
+    <p class="section-sub">Points are awarded for each correct prediction. Points double each round — getting a champion pick right is worth 32 points!</p>
 
     <div class="card">
       <div class="stat-grid">
-        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">1</div><div class="stat-label">Round 1 (32 games)</div></div>
-        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">2</div><div class="stat-label">Round 2 (16 games)</div></div>
-        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">4</div><div class="stat-label">Elite 8 (8 games)</div></div>
-        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">8</div><div class="stat-label">Quarterfinals (4 games)</div></div>
-        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">16</div><div class="stat-label">Semifinals (2 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">1</div><div class="stat-label">Round of 64 (32 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">2</div><div class="stat-label">Round of 32 (16 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">4</div><div class="stat-label">Sweet 16 (8 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">8</div><div class="stat-label">Elite 8 (4 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">16</div><div class="stat-label">Final Four (2 games)</div></div>
         <div class="stat-tile"><div class="stat-value" style="color: var(--cmu-gold);">32</div><div class="stat-label">Championship (1 game)</div></div>
       </div>
       <div class="info-box" style="margin-top: 15px;">
         <strong>Max Score:</strong> 32×1 + 16×2 + 8×4 + 4×8 + 2×16 + 1×32 = 32+32+32+32+32+32 = <strong style="color:var(--cmu-gold)">196 points</strong>
+        <br>
+        <strong>Progressive brackets</strong> are updated after each round with real results, so upsets don't cascade through your entire bracket — typically yielding higher scores.
       </div>
     </div>
   </section>
@@ -208,7 +334,7 @@
   <!-- Quick Start -->
   <section class="section">
     <h2 class="section-title">Quick <span>Start</span></h2>
-    <p class="section-sub">Get up and running with the full pipeline in minutes.</p>
+    <p class="section-sub">Get up and running with the full pipeline. <a href="getting-started.html" style="color:var(--accent-blue)">See the detailed guide →</a></p>
 
     <div class="card">
       <pre><code># 1. Clone and install
@@ -216,21 +342,31 @@ git clone https://github.com/Qrytics/cmuMarchMadness-ML
 cd cmuMarchMadness-ML
 pip install -r requirements.txt
 
-# 2. Generate sample data (or use real Kaggle data)
+# 2a. Use real Kaggle data (recommended — see getting-started.html)
+#     Place ~/.kaggle/kaggle.json first, then:
+python scripts/download_data.py
+python -m src.train --data-dir data/raw
+python -m src.predict --data-dir data/raw
+
+# 2b. Or use synthetic sample data (quick start, lower accuracy)
 python scripts/generate_sample_data.py
-
-# 3. Train models (both Men's and Women's)
 python -m src.train
-
-# 4. Evaluate historical performance
-python -m src.evaluate
-
-# 5. Generate tournament predictions
 python -m src.predict
 
-# Predictions saved to:
-#   predictions/MTourneyPredictions.csv  (72,390 rows)
-#   predictions/WTourneyPredictions.csv  (71,631 rows)</code></pre>
+# 3. Evaluate historical performance
+python -m src.evaluate --data-dir data/raw
+
+# 4. Update this dashboard
+python scripts/export_site_data.py
+
+# Submission files:
+#   predictions/MTourneyPredictions.csv  (72,390 rows) ← submit this
+#   predictions/WTourneyPredictions.csv  (71,631 rows) ← and this</code></pre>
+    </div>
+
+    <div style="text-align:center; margin-top: 20px;">
+      <a href="getting-started.html" class="btn btn-primary" style="margin-right:10px">🚀 Full Setup Guide</a>
+      <a href="bracket.html" class="btn btn-outline">🏆 View Bracket Predictions</a>
     </div>
   </section>
 
@@ -238,7 +374,7 @@ python -m src.predict
 
 <footer>
   <div class="container">
-    <p>CMU March Madness ML Competition 2026 — <a href="https://github.com/Qrytics/cmuMarchMadness-ML">GitHub</a></p>
+    <p>CMU March Madness ML Competition 2026 — <a href="https://github.com/Qrytics/cmuMarchMadness-ML">GitHub</a> · <a href="https://www.cs.cmu.edu/~reids/mmml/">CMU MMML</a></p>
     <p style="margin-top: 8px;">Data: Kaggle March Machine Learning Mania | Models: XGBoost + LightGBM + Logistic Regression</p>
   </div>
 </footer>
@@ -247,6 +383,38 @@ python -m src.predict
 // Chart.js defaults for dark theme
 Chart.defaults.color = '#a0a0b0';
 Chart.defaults.borderColor = '#2a2a4a';
+
+// Countdown timer
+function updateCountdown() {
+  const deadline = new Date('2026-03-17T16:00:00Z'); // noon EDT = 16:00 UTC
+  const now = new Date();
+  const diff = deadline - now;
+
+  if (diff <= 0) {
+    document.getElementById('countdown').innerHTML = '<span style="color:var(--cmu-red);font-weight:700">Deadline passed</span>';
+    return;
+  }
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+  document.getElementById('cd-days').textContent = String(days).padStart(2, '0');
+  document.getElementById('cd-hours').textContent = String(hours).padStart(2, '0');
+  document.getElementById('cd-mins').textContent = String(mins).padStart(2, '0');
+  document.getElementById('cd-secs').textContent = String(secs).padStart(2, '0');
+}
+updateCountdown();
+setInterval(updateCountdown, 1000);
+
+// Tab switching — passes the button element explicitly to avoid relying on implicit event global
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tab === 'men' ? 'menTab' : 'womenTab').classList.add('active');
+  btn.classList.add('active');
+}
 
 // Load and render data
 async function loadData() {
@@ -291,7 +459,7 @@ function renderBacktestCharts(scores, prefix) {
         borderColor: '#4facfe',
         borderWidth: 1,
       }, {
-        label: 'Random baseline',
+        label: 'Random baseline (50%)',
         data: seasons.map(() => 50),
         type: 'line',
         borderColor: '#c41230',
@@ -314,7 +482,7 @@ function renderBacktestCharts(scores, prefix) {
         borderColor: '#00d4aa',
         borderWidth: 1,
       }, {
-        label: 'Max (196)',
+        label: 'Perfect score (196)',
         data: seasons.map(() => 196),
         type: 'line',
         borderColor: '#f5c518',
@@ -330,26 +498,20 @@ function renderBacktestCharts(scores, prefix) {
 function renderFeatTable(csv, containerId) {
   const lines = csv.trim().split('\n').slice(1, 11); // top 10
   const maxVal = parseFloat(lines[0].split(',')[1]);
-  let html = '<table><thead><tr><th>Feature</th><th>Importance</th><th>Bar</th></tr></thead><tbody>';
-  for (const line of lines) {
+  let html = '<table><thead><tr><th>#</th><th>Feature</th><th>Importance</th><th>Bar</th></tr></thead><tbody>';
+  lines.forEach((line, i) => {
     const [feat, imp] = line.split(',');
     const pct = (parseFloat(imp) / maxVal * 100).toFixed(0);
-    const label = feat.replace('diff_', '').replace('Avg', '').replace('Pct', '%');
+    const label = feat.replace('diff_', '').replace('Avg', ' Avg').replace('Pct', ' %').trim();
     html += `<tr>
+      <td style="color:var(--text-secondary)">${i + 1}</td>
       <td>${label}</td>
       <td>${parseFloat(imp).toFixed(4)}</td>
       <td><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></td>
     </tr>`;
-  }
+  });
   html += '</tbody></table>';
   document.getElementById(containerId).innerHTML = html;
-}
-
-function switchTab(tab) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(tab === 'men' ? 'menTab' : 'womenTab').classList.add('active');
-  event.target.classList.add('active');
 }
 
 loadData();
