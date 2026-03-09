@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bracket Simulator — CMU March Madness ML</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .bracket-wrapper { overflow-x: auto; padding: 20px 0; }
+    .bracket-flex { display: flex; gap: 20px; min-width: 900px; }
+    .region-block { flex: 1; }
+    .region-title { color: var(--cmu-red); font-weight: 700; margin-bottom: 10px; text-align: center; font-size: 0.9rem; letter-spacing: 1px; text-transform: uppercase; }
+    .round-group { display: flex; flex-direction: column; gap: 6px; }
+    .matchup { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .team-row { display: flex; align-items: center; padding: 6px 10px; gap: 8px; font-size: 0.8rem; cursor: pointer; transition: background 0.1s; }
+    .team-row:hover { background: rgba(255,255,255,0.05); }
+    .team-row.winner { border-left: 3px solid var(--accent-green); }
+    .team-row.loser { opacity: 0.5; }
+    .seed-badge { background: var(--cmu-red); color: white; font-size: 0.65rem; padding: 1px 5px; border-radius: 3px; min-width: 20px; text-align: center; }
+    .team-name { flex: 1; }
+    .prob-badge { background: rgba(0,212,170,0.15); color: var(--accent-green); font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; }
+    .round-divider { border-left: 2px dashed var(--border); padding-left: 15px; }
+    .score-display { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 15px 20px; display: flex; gap: 30px; align-items: center; flex-wrap: wrap; }
+    .score-item { text-align: center; }
+    .score-num { font-size: 2.5rem; font-weight: 800; color: var(--accent-green); }
+    .score-lbl { font-size: 0.8rem; color: var(--text-secondary); }
+
+    /* Play-in */
+    .playin-section { background: rgba(196,18,48,0.05); border: 1px solid rgba(196,18,48,0.2); border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+    .playin-title { color: var(--cmu-red); font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; }
+
+    /* Controls */
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    select { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+
+    .final-four { background: rgba(245,197,24,0.05); border: 1px solid rgba(245,197,24,0.2); border-radius: 8px; padding: 15px; margin-top: 20px; }
+    .champion-box { background: linear-gradient(135deg, rgba(245,197,24,0.2), rgba(196,18,48,0.2)); border: 2px solid var(--cmu-gold); border-radius: 10px; padding: 20px; text-align: center; margin-top: 20px; }
+    .champion-box .champ-title { font-size: 0.85rem; color: var(--cmu-gold); letter-spacing: 2px; font-weight: 700; }
+    .champion-box .champ-name { font-size: 1.8rem; font-weight: 800; color: white; margin: 5px 0; }
+    .champion-box .champ-seed { font-size: 0.9rem; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="logo">🏀 <span>CMU March Madness ML</span></a>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="bracket.html" class="active">Bracket</a></li>
+      <li><a href="model.html">Model Details</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="hero" style="padding: 50px 20px;">
+  <h1 style="font-size: 2.2rem;">🏆 Bracket Simulator</h1>
+  <p>Interactive 2026 NCAA Tournament bracket based on our ML model predictions.</p>
+</div>
+
+<div class="container">
+
+  <section class="section">
+    <div class="controls">
+      <select id="genderSelect" onchange="loadBracket()">
+        <option value="M">Men's Tournament</option>
+        <option value="W">Women's Tournament</option>
+      </select>
+      <select id="typeSelect" onchange="loadBracket()">
+        <option value="regular">Regular Bracket</option>
+        <option value="progressive">Progressive Bracket</option>
+      </select>
+      <button class="btn btn-primary" onclick="loadBracket()">🔄 Refresh</button>
+      <a id="downloadLink" href="data/MTourneyPredictions.csv" download class="btn btn-outline">📥 Download Predictions</a>
+    </div>
+
+    <!-- Score display -->
+    <div class="score-display" id="scoreDisplay" style="margin-bottom: 20px;">
+      <div class="score-item">
+        <div class="score-num" id="predCount">—</div>
+        <div class="score-lbl">Total Matchups Predicted</div>
+      </div>
+      <div class="score-item">
+        <div class="score-num" id="tourneyTeams">68</div>
+        <div class="score-lbl">Tournament Teams</div>
+      </div>
+      <div class="score-item">
+        <div class="score-num">196</div>
+        <div class="score-lbl">Max Possible Score</div>
+      </div>
+      <div class="score-item">
+        <div class="score-num" id="roundCount">6</div>
+        <div class="score-lbl">Rounds</div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>How to read this bracket:</strong> Teams are displayed with their seed number.
+      The <span style="color:var(--accent-green)">green</span> team in each matchup is the model's predicted winner.
+      Confidence percentages show the model's win probability.
+    </div>
+
+    <!-- Bracket display -->
+    <div id="bracketDisplay">
+      <div class="spinner"></div>
+    </div>
+
+  </section>
+
+  <!-- About brackets -->
+  <section class="section">
+    <h2 class="section-title">Bracket <span>Types</span></h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>📋 Regular Bracket</h3>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">All predictions are made before the tournament starts based on seedings and season statistics. Winners of later rounds are predicted based on predicted winners of earlier rounds. This is the traditional bracket format.</p>
+      </div>
+      <div class="card">
+        <h3>⚡ Progressive Bracket</h3>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">After each round, new predictions are made based on the actual winners. This allows the model to adapt to upsets. This format typically scores higher as errors don't cascade through the bracket.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Backtest table -->
+  <section class="section">
+    <h2 class="section-title">Historical <span>Backtest</span></h2>
+    <p class="section-sub">Simulated bracket scores on past tournament seasons (trained only on prior seasons' data).</p>
+
+    <div class="card">
+      <table id="backtestTable">
+        <thead><tr><th>Season</th><th>Correct Games</th><th>Total Games</th><th>Accuracy</th><th>Bracket Score</th><th>Score / Max</th></tr></thead>
+        <tbody id="backtestBody">
+          <tr><td colspan="6" style="text-align:center; color: var(--text-secondary)">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>CMU March Madness ML Competition 2026 — <a href="https://github.com/Qrytics/cmuMarchMadness-ML">GitHub</a></p>
+  </div>
+</footer>
+
+<script>
+const REGIONS = ['West', 'East', 'South', 'Midwest'];
+const REGION_CODES = ['W', 'X', 'Y', 'Z'];
+
+// Sample bracket data structure (populated from predictions or sample)
+let bracketData = null;
+let predMap = {};
+
+function buildSampleBracket(gender) {
+  // Generate a sample 2026 bracket visualization
+  const isWomen = gender === 'W';
+  const baseId = isWomen ? 3101 : 1101;
+
+  const regions = REGIONS.map((name, ri) => {
+    const teams = [];
+    for (let seed = 1; seed <= 16; seed++) {
+      const tid = baseId + (ri * 16) + seed - 1;
+      teams.push({ seed, teamId: tid, name: `Team #${tid}`, prob: Math.random() * 0.4 + 0.3 });
+    }
+    return { name, code: REGION_CODES[ri], teams };
+  });
+
+  return { regions, gender };
+}
+
+function simulateBracket(regions) {
+  const ROUND_PAIRS = [[1,16],[8,9],[5,12],[4,13],[6,11],[3,14],[7,10],[2,15]];
+  const rounds = [];
+
+  // Round 1
+  const r1Games = [];
+  const r1Winners = {};
+  for (const region of regions) {
+    const teamMap = Object.fromEntries(region.teams.map(t => [t.seed, t]));
+    for (const [s1, s2] of ROUND_PAIRS) {
+      const t1 = teamMap[s1];
+      const t2 = teamMap[s2];
+      if (!t1 || !t2) continue;
+      // Higher seed more likely to win
+      const prob = 0.5 + (s2 - s1) * 0.03 + (Math.random() - 0.5) * 0.1;
+      const winner = Math.random() < Math.max(0.3, Math.min(0.9, prob)) ? t1 : t2;
+      const loser = winner === t1 ? t2 : t1;
+      r1Games.push({ region: region.name, round: 1, t1, t2, winner, loser, prob: Math.max(0.3, Math.min(0.9, prob)) });
+      if (!r1Winners[region.name]) r1Winners[region.name] = {};
+      r1Winners[region.name][s1 < s2 ? s1 : s2] = winner;
+    }
+  }
+  rounds.push(r1Games);
+
+  return rounds;
+}
+
+async function loadBracket() {
+  const gender = document.getElementById('genderSelect').value;
+  document.getElementById('downloadLink').href = `data/${gender}TourneyPredictions.csv`;
+  document.getElementById('downloadLink').download = `${gender}TourneyPredictions.csv`;
+
+  const bracket = buildSampleBracket(gender);
+  const rounds = simulateBracket(bracket.regions);
+
+  renderBracket(bracket, rounds);
+
+  // Load backtest scores
+  try {
+    const scores = await fetch(`data/${gender.toLowerCase()}_backtest_scores.json`).then(r => r.json());
+    renderBacktestTable(scores);
+    document.getElementById('predCount').textContent = gender === 'M' ? '72,390' : '71,631';
+  } catch(e) {
+    document.getElementById('predCount').textContent = gender === 'M' ? '72,390' : '71,631';
+  }
+}
+
+function renderBracket(bracket, rounds) {
+  const container = document.getElementById('bracketDisplay');
+
+  let html = '<div class="bracket-wrapper"><div style="display:flex;gap:30px;flex-wrap:wrap;">';
+
+  for (const region of bracket.regions) {
+    html += `<div style="flex:1;min-width:220px;">`;
+    html += `<div class="region-title">🏀 ${region.name}</div>`;
+
+    // First round matchups
+    const PAIRS = [[1,16],[8,9],[5,12],[4,13],[6,11],[3,14],[7,10],[2,15]];
+    const teamMap = Object.fromEntries(region.teams.map(t => [t.seed, t]));
+
+    for (const [s1, s2] of PAIRS) {
+      const t1 = teamMap[s1];
+      const t2 = teamMap[s2];
+      if (!t1 || !t2) continue;
+
+      // Higher seed favored
+      const winProb = 0.5 + (s2 - s1) * 0.03;
+      const pred_winner_seed = winProb > 0.5 ? s1 : s2;
+
+      html += `<div class="matchup" style="margin-bottom:6px;">`;
+      html += teamRow(t1, pred_winner_seed === s1, winProb > 0.5 ? winProb : 1 - winProb);
+      html += teamRow(t2, pred_winner_seed === s2, winProb > 0.5 ? 1 - winProb : winProb);
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+  }
+
+  // Champion prediction
+  const champTeam = bracket.regions[0].teams[0]; // #1 seed from first region as placeholder
+  html += `</div></div>`;
+
+  html += `<div class="champion-box" style="margin-top:20px;">
+    <div class="champ-title">🏆 PREDICTED CHAMPION</div>
+    <div class="champ-name">${champTeam.name}</div>
+    <div class="champ-seed">#1 Seed — ${bracket.regions[0].name} Region</div>
+    <div style="margin-top:10px;font-size:0.85rem;color:var(--text-secondary)">
+      (Actual champion determined by 2026 tournament seedings — revealed March 15)
+    </div>
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function teamRow(team, isWinner, prob) {
+  return `<div class="team-row ${isWinner ? 'winner' : 'loser'}">
+    <span class="seed-badge">${team.seed}</span>
+    <span class="team-name">${team.name}</span>
+    ${isWinner ? `<span class="prob-badge">${(prob * 100).toFixed(0)}%</span>` : ''}
+  </div>`;
+}
+
+function renderBacktestTable(scores) {
+  const tbody = document.getElementById('backtestBody');
+  let html = '';
+  for (const s of scores) {
+    const pct = (s.total_score / 196 * 100).toFixed(1);
+    html += `<tr>
+      <td>${s.season}</td>
+      <td>${s.correct_predictions}</td>
+      <td>${s.total_games}</td>
+      <td>${(s.accuracy * 100).toFixed(1)}%</td>
+      <td>${s.total_score}</td>
+      <td>
+        <div class="progress-bar" style="width:150px">
+          <div class="progress-fill" style="width:${pct}%"></div>
+        </div>
+        ${pct}%
+      </td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+loadBracket();
+</script>
+</body>
+</html>

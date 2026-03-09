@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data (raw Kaggle data is large - use sample or download)
+data/raw/
+data/kaggle/
+
+# Models (tracked via git for reproducibility, but can be excluded if large)
+# models/*.pkl
+
+# Kaggle API credentials
+.kaggle/
+kaggle.json
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Matplotlib cache
+~/.config/matplotlib/
+
+# Temporary files
+/tmp/
+*.tmp
+*.bak

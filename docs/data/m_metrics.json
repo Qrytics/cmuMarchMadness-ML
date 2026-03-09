@@ -1,0 +1,11 @@
+{
+  "gender": "M",
+  "n_samples": 2016,
+  "n_features": 28,
+  "cv_accuracy_mean": 0.553968253968254,
+  "cv_accuracy_std": 0.055759263715080304,
+  "cv_log_loss_mean": 0.7188088970324537,
+  "cv_log_loss_std": 0.046140952910172825,
+  "cv_auc_mean": 0.56331569664903,
+  "cv_auc_std": 0.08392895805712222
+}

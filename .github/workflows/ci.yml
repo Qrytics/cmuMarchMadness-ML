@@ -1,0 +1,63 @@
+name: CI — Test & Validate
+
+on:
+  push:
+    branches: [main, "copilot/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate sample data
+        run: python scripts/generate_sample_data.py
+
+      - name: Run unit tests
+        run: python -m pytest tests/ -v --tb=short
+
+      - name: Validate data schema
+        run: |
+          python -c "
+          import pandas as pd, os
+          for g in ['M', 'W']:
+            df = pd.read_csv(f'data/sample/{g}RegularSeasonDetailedResults.csv')
+            assert 'WTeamID' in df.columns and 'LTeamID' in df.columns, 'Missing team ID columns'
+            print(f'{g} regular season: {len(df):,} games across {df[\"Season\"].nunique()} seasons')
+          print('Data schema OK')
+          "
+
+      - name: Train models (quick smoke test)
+        run: python -m src.train --gender M
+        timeout-minutes: 10
+
+      - name: Generate predictions
+        run: python -m src.predict --gender M
+
+      - name: Validate prediction format
+        run: |
+          python -c "
+          import pandas as pd
+          df = pd.read_csv('predictions/MTourneyPredictions.csv')
+          assert list(df.columns) == ['WTeamID', 'LTeamID'], f'Wrong columns: {list(df.columns)}'
+          assert len(df) == 72390, f'Wrong row count: {len(df)} (expected 72390)'
+          print(f'MTourneyPredictions.csv: {len(df):,} rows — OK')
+          "
+
+      - name: Run backtesting
+        run: python -m src.evaluate --gender M --no-plots
+        timeout-minutes: 10

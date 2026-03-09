@@ -1,0 +1,97 @@
+name: Train Models & Generate Predictions
+
+on:
+  workflow_dispatch:
+    inputs:
+      gender:
+        description: "Tournament gender (M, W, or both)"
+        required: false
+        default: "both"
+      use_kaggle:
+        description: "Use real Kaggle data (requires KAGGLE_USERNAME/KAGGLE_KEY secrets)"
+        required: false
+        default: "false"
+        type: boolean
+  schedule:
+    # Run every Monday at 6 AM UTC (weekly refresh before tournament)
+    - cron: "0 6 * * 1"
+
+jobs:
+  train-and-predict:
+    name: Train Models + Generate Predictions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download Kaggle data (if enabled)
+        if: ${{ github.event.inputs.use_kaggle == 'true' }}
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          if [ -n "$KAGGLE_USERNAME" ] && [ -n "$KAGGLE_KEY" ]; then
+            python scripts/download_data.py
+          else
+            echo "Kaggle credentials not set, using sample data"
+          fi
+
+      - name: Generate sample data (fallback)
+        run: python scripts/generate_sample_data.py
+
+      - name: Train Men's model
+        if: ${{ github.event.inputs.gender != 'W' }}
+        run: python -m src.train --gender M
+        timeout-minutes: 20
+
+      - name: Train Women's model
+        if: ${{ github.event.inputs.gender != 'M' }}
+        run: python -m src.train --gender W
+        timeout-minutes: 20
+
+      - name: Evaluate models
+        run: |
+          GENDER="${{ github.event.inputs.gender || 'both' }}"
+          python -m src.evaluate --gender "$GENDER"
+        timeout-minutes: 20
+
+      - name: Generate predictions
+        run: |
+          GENDER="${{ github.event.inputs.gender || 'both' }}"
+          python -m src.predict --gender "$GENDER"
+        timeout-minutes: 15
+
+      - name: Validate predictions
+        run: |
+          python -c "
+          import pandas as pd
+          m = pd.read_csv('predictions/MTourneyPredictions.csv')
+          w = pd.read_csv('predictions/WTourneyPredictions.csv')
+          assert len(m) == 72390, f'M: expected 72390, got {len(m)}'
+          assert len(w) == 71631, f'W: expected 71631, got {len(w)}'
+          print(f'✓ MTourneyPredictions.csv: {len(m):,} rows')
+          print(f'✓ WTourneyPredictions.csv: {len(w):,} rows')
+          "
+
+      - name: Export site data
+        run: python scripts/export_site_data.py
+
+      - name: Commit updated models and predictions
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add models/ predictions/ docs/data/ docs/assets/
+          git diff --staged --quiet || git commit -m "Auto: Retrain models and update predictions [skip ci]"
+          git push

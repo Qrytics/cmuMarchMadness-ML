@@ -1,0 +1,64 @@
+[
+  {
+    "season": 2021,
+    "total_score": 27,
+    "correct_predictions": 22,
+    "total_games": 38,
+    "accuracy": 0.5789473684210527,
+    "per_round": {
+      "1": 19,
+      "2": 4,
+      "3": 4
+    },
+    "max_possible": 196
+  },
+  {
+    "season": 2022,
+    "total_score": 23,
+    "correct_predictions": 20,
+    "total_games": 36,
+    "accuracy": 0.5555555555555556,
+    "per_round": {
+      "1": 17,
+      "2": 6
+    },
+    "max_possible": 196
+  },
+  {
+    "season": 2023,
+    "total_score": 38,
+    "correct_predictions": 26,
+    "total_games": 38,
+    "accuracy": 0.6842105263157895,
+    "per_round": {
+      "1": 18,
+      "2": 12,
+      "3": 8
+    },
+    "max_possible": 196
+  },
+  {
+    "season": 2024,
+    "total_score": 21,
+    "correct_predictions": 19,
+    "total_games": 35,
+    "accuracy": 0.5428571428571428,
+    "per_round": {
+      "1": 17,
+      "2": 4
+    },
+    "max_possible": 196
+  },
+  {
+    "season": 2025,
+    "total_score": 19,
+    "correct_predictions": 18,
+    "total_games": 36,
+    "accuracy": 0.5,
+    "per_round": {
+      "1": 17,
+      "2": 2
+    },
+    "max_possible": 196
+  }
+]
