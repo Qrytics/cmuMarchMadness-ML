@@ -168,7 +168,10 @@ class TestPredictionFormat:
 
         df = pd.read_csv(pred_path)
         assert list(df.columns) == ["WTeamID", "LTeamID"], f"Wrong columns: {list(df.columns)}"
-        assert len(df) == 72390, f"Wrong row count: {len(df)}"
+        # Row count = C(n_teams, 2).  With Stage-2 Kaggle data: 365 teams → 66,430.
+        # With sample-only data: 381 teams → 72,390.  Accept either.
+        n = len(df)
+        assert n in {66430, 72390}, f"Unexpected row count: {n}"
         assert df["WTeamID"].dtype in [int, np.int64]
         assert df["LTeamID"].dtype in [int, np.int64]
         # Ensure no duplicate pairs
@@ -183,4 +186,7 @@ class TestPredictionFormat:
             pytest.skip("Predictions not generated yet")
 
         df = pd.read_csv(pred_path)
-        assert len(df) == 71631, f"Wrong row count: {len(df)}"
+        # Row count = C(n_teams, 2).  Stage-2: 363 teams → 65,703.
+        # Sample-only: 379 teams → 71,631.  Accept either.
+        n = len(df)
+        assert n in {65703, 71631}, f"Unexpected row count: {n}"

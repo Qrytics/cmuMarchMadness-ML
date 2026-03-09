@@ -2,9 +2,9 @@
 Prediction generation for the CMU March Madness competition.
 Generates all-pairs predictions for men's and women's tournaments.
 
-Submission format: CSV with columns 'WTeamID' and 'LTeamID'
-- Men's:   MTourneyPredictions.csv  (C(381,2) = 72,390 rows)
-- Women's: WTourneyPredictions.csv  (C(379,2) = 71,631 rows)
+Two output formats are produced:
+1. WTeamID / LTeamID CSV  (bracket-style; WTeamID is the predicted winner)
+2. Kaggle submission CSV   (ID = "Season_TeamID1_TeamID2", Pred = win probability)
 
 Usage:
     python -m src.predict          # generate both M and W predictions
@@ -27,15 +27,19 @@ from src.model import MarchMadnessModel
 PRED_DIR = os.path.join(os.path.dirname(__file__), "..", "predictions")
 os.makedirs(PRED_DIR, exist_ok=True)
 
-# The stats season: we use 2024-25 regular season statistics (Season=2025 in data)
-# to make predictions for the 2026 NCAA tournament
-STATS_SEASON = 2025
+# Kaggle competition year
+COMPETITION_SEASON = 2026
 
 
 def generate_predictions(gender="M", data_dir=None, save=True):
     """
     Generate predictions for all possible team matchups.
-    Returns a DataFrame with columns WTeamID, LTeamID.
+
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.DataFrame]
+        (bracket_df, kaggle_df) where bracket_df has columns WTeamID/LTeamID
+        and kaggle_df has columns ID/Pred in the official Kaggle format.
     """
     print(f"\n{'='*60}")
     print(f"Generating {gender} predictions...")
@@ -53,7 +57,7 @@ def generate_predictions(gender="M", data_dir=None, save=True):
     # Get the most recent season available
     available_seasons = sorted(season_stats["Season"].unique())
     use_season = available_seasons[-1]
-    print(f"  Using season {use_season} stats for 2026 predictions.")
+    print(f"  Using season {use_season} stats for {COMPETITION_SEASON} predictions.")
 
     # Build team features for the most recent season
     team_feats = build_team_features(season_stats, rankings, use_season)
@@ -67,13 +71,14 @@ def generate_predictions(gender="M", data_dir=None, save=True):
     expected = len(team_ids) * (len(team_ids) - 1) // 2
     print(f"  Expected matchups: {expected:,}")
 
-    # Generate all pairs
+    # Generate all pairs (always smaller ID first to match Kaggle format)
     pairs = list(itertools.combinations(team_ids, 2))
     print(f"  Building feature matrix for {len(pairs):,} matchups...")
 
-    rows = []
+    bracket_predictions = []
+    kaggle_predictions = []
+
     batch_size = 10000
-    predictions = []
 
     for i in tqdm(range(0, len(pairs), batch_size), desc=f"Predicting {gender}"):
         batch = pairs[i: i + batch_size]
@@ -94,22 +99,79 @@ def generate_predictions(gender="M", data_dir=None, save=True):
         proba = model.predict_proba(feat_df)
 
         for j, (t1, t2) in enumerate(batch):
-            p = proba[j]
-            if p >= 0.5:
-                predictions.append({"WTeamID": t1, "LTeamID": t2})
-            else:
-                predictions.append({"WTeamID": t2, "LTeamID": t1})
+            p = float(proba[j])  # prob that t1 beats t2
+            # t1 < t2 always (from combinations), so ID is always consistent
+            kaggle_id = f"{COMPETITION_SEASON}_{t1}_{t2}"
+            kaggle_predictions.append({"ID": kaggle_id, "Pred": round(p, 6)})
 
-    pred_df = pd.DataFrame(predictions)
-    print(f"  Generated {len(pred_df):,} predictions.")
+            # Bracket format: predicted winner first
+            if p >= 0.5:
+                bracket_predictions.append({"WTeamID": t1, "LTeamID": t2})
+            else:
+                bracket_predictions.append({"WTeamID": t2, "LTeamID": t1})
+
+    bracket_df = pd.DataFrame(bracket_predictions)
+    kaggle_df = pd.DataFrame(kaggle_predictions)
+    print(f"  Generated {len(bracket_df):,} predictions.")
 
     if save:
-        filename = f"{gender}TourneyPredictions.csv"
-        path = os.path.join(PRED_DIR, filename)
-        pred_df.to_csv(path, index=False)
-        print(f"  Saved to {path}")
+        # Bracket-style CSV
+        bracket_filename = f"{gender}TourneyPredictions.csv"
+        bracket_path = os.path.join(PRED_DIR, bracket_filename)
+        bracket_df.to_csv(bracket_path, index=False)
+        print(f"  Bracket predictions saved to {bracket_path}")
 
-    return pred_df
+        # Kaggle submission CSV
+        kaggle_filename = f"{gender}KaggleSubmission.csv"
+        kaggle_path = os.path.join(PRED_DIR, kaggle_filename)
+        kaggle_df.to_csv(kaggle_path, index=False)
+        print(f"  Kaggle submission saved to {kaggle_path}")
+
+    return bracket_df, kaggle_df
+
+
+def generate_combined_kaggle_submission(data_dir=None):
+    """
+    Combine M and W predictions into a single Kaggle submission file.
+
+    If a SampleSubmissionStage2.csv exists (Kaggle format), the output is
+    filtered/aligned to exactly the IDs required by the competition.
+    The combined file contains all rows from both genders, sorted by ID.
+    """
+    dfs = []
+    for g in ["M", "W"]:
+        path = os.path.join(PRED_DIR, f"{g}KaggleSubmission.csv")
+        if os.path.exists(path):
+            dfs.append(pd.read_csv(path))
+
+    if not dfs:
+        print("No Kaggle submission files found. Run generate_predictions first.")
+        return None
+
+    combined = pd.concat(dfs, ignore_index=True).sort_values("ID").reset_index(drop=True)
+
+    # Try to align with Stage 2 sample submission if it exists
+    from src.data_loader import _load, KAGGLE_DIR, SAMPLE_DIR
+    try:
+        stage2 = _load("SampleSubmissionStage2.csv", data_dir)
+        # Filter our predictions to only the IDs Kaggle needs
+        stage2_ids = set(stage2["ID"])
+        aligned = combined[combined["ID"].isin(stage2_ids)].copy()
+        missing = stage2_ids - set(aligned["ID"])
+        if missing:
+            print(f"  Warning: {len(missing)} Stage-2 IDs not found in our predictions "
+                  "— filling with 0.5")
+            missing_df = pd.DataFrame({"ID": sorted(missing), "Pred": 0.5})
+            aligned = pd.concat([aligned, missing_df], ignore_index=True).sort_values("ID")
+        combined = aligned
+        print(f"  Aligned to Stage-2 format ({len(combined):,} rows)")
+    except FileNotFoundError:
+        print(f"  SampleSubmissionStage2.csv not found; keeping all {len(combined):,} rows")
+
+    out_path = os.path.join(PRED_DIR, "submission.csv")
+    combined.to_csv(out_path, index=False)
+    print(f"  Combined Kaggle submission saved to {out_path} ({len(combined):,} rows)")
+    return combined
 
 
 def main():
@@ -120,12 +182,18 @@ def main():
                         help="Directory containing data files")
     parser.add_argument("--no-save", action="store_true",
                         help="Do not save predictions")
+    parser.add_argument("--combine", action="store_true",
+                        help="After predicting, merge M and W into one submission.csv")
     args = parser.parse_args()
 
     genders = ["M", "W"] if args.gender == "both" else [args.gender]
     for g in genders:
         generate_predictions(g, data_dir=args.data_dir, save=not args.no_save)
 
+    if args.combine or args.gender == "both":
+        generate_combined_kaggle_submission(data_dir=args.data_dir)
+
 
 if __name__ == "__main__":
     main()
+

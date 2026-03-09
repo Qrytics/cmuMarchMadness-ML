@@ -62,10 +62,25 @@ def evaluate_gender(gender="M", data_dir=None, seasons=None, save_plots=True):
     all_results = []
     bracket_scores = []
 
+    # Use pre-aggregated rankings if available (fast path for Massey ordinals)
+    rankings_agg = data.get("rankings_agg", {})
+
     for season in eval_seasons:
         # Build team features using only prior seasons' data (no leakage)
         prior_stats = data["season_stats"][data["season_stats"]["Season"] < season]
-        prior_rankings = data["rankings"][data["rankings"]["Season"] < season] if not data["rankings"].empty else data["rankings"]
+
+        # For the rankings dict, filter to entries before the eval season
+        if rankings_agg:
+            prior_rankings = {
+                k: v for k, v in rankings_agg.items() if k[0] < season
+            }
+        else:
+            prior_rankings_df = data["rankings"]
+            prior_rankings = (
+                prior_rankings_df[prior_rankings_df["Season"] < season]
+                if not prior_rankings_df.empty
+                else prior_rankings_df
+            )
 
         if prior_stats.empty:
             print(f"  Season {season}: No prior data, skipping.")
