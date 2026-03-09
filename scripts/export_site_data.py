@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""
+Export model metrics and predictions to the docs/data directory for GitHub Pages.
+Run this after training to update the site data.
+"""
+
+import os
+import shutil
+import json
+
+REPO_ROOT = os.path.join(os.path.dirname(__file__), "..")
+MODELS_DIR = os.path.join(REPO_ROOT, "models")
+PREDS_DIR = os.path.join(REPO_ROOT, "predictions")
+DOCS_DATA_DIR = os.path.join(REPO_ROOT, "docs", "data")
+DOCS_ASSETS_DIR = os.path.join(REPO_ROOT, "docs", "assets")
+
+os.makedirs(DOCS_DATA_DIR, exist_ok=True)
+
+
+def copy_file(src, dst):
+    if os.path.exists(src):
+        shutil.copy2(src, dst)
+        print(f"  Copied: {os.path.basename(src)}")
+    else:
+        print(f"  Missing: {src}")
+
+
+def main():
+    print("Exporting model data to docs/data/...")
+
+    # Metrics JSONs
+    copy_file(os.path.join(MODELS_DIR, "m_metrics.json"), os.path.join(DOCS_DATA_DIR, "m_metrics.json"))
+    copy_file(os.path.join(MODELS_DIR, "w_metrics.json"), os.path.join(DOCS_DATA_DIR, "w_metrics.json"))
+    copy_file(os.path.join(MODELS_DIR, "training_metrics.json"), os.path.join(DOCS_DATA_DIR, "training_metrics.json"))
+
+    # Backtest scores
+    copy_file(os.path.join(MODELS_DIR, "m_backtest_scores.json"), os.path.join(DOCS_DATA_DIR, "m_backtest_scores.json"))
+    copy_file(os.path.join(MODELS_DIR, "w_backtest_scores.json"), os.path.join(DOCS_DATA_DIR, "w_backtest_scores.json"))
+
+    # Feature importance CSVs
+    copy_file(os.path.join(MODELS_DIR, "m_feature_importance.csv"), os.path.join(DOCS_DATA_DIR, "m_feature_importance.csv"))
+    copy_file(os.path.join(MODELS_DIR, "w_feature_importance.csv"), os.path.join(DOCS_DATA_DIR, "w_feature_importance.csv"))
+
+    # Predictions (these can be large, but they're what the site offers for download)
+    copy_file(os.path.join(PREDS_DIR, "MTourneyPredictions.csv"), os.path.join(DOCS_DATA_DIR, "MTourneyPredictions.csv"))
+    copy_file(os.path.join(PREDS_DIR, "WTourneyPredictions.csv"), os.path.join(DOCS_DATA_DIR, "WTourneyPredictions.csv"))
+
+    # Evaluation plots (already go to docs/assets)
+    for img in ["m_evaluation.png", "w_evaluation.png"]:
+        src = os.path.join(DOCS_ASSETS_DIR, img)
+        if os.path.exists(src):
+            print(f"  OK: {img} (already in docs/assets)")
+        else:
+            print(f"  Missing plot: {img} (run python -m src.evaluate first)")
+
+    print("\nDone! Site data updated.")
+    print(f"Files in docs/data/: {os.listdir(DOCS_DATA_DIR)}")
+
+
+if __name__ == "__main__":
+    main()

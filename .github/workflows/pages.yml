@@ -1,0 +1,74 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "models/**"
+      - "predictions/**"
+  workflow_dispatch:
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies (for data export)
+        run: pip install -r requirements.txt
+
+      - name: Generate sample data if needed
+        run: |
+          if [ ! -f data/sample/MTeams.csv ]; then
+            python scripts/generate_sample_data.py
+          fi
+
+      - name: Train models if missing
+        run: |
+          if [ ! -f models/m_model.pkl ]; then
+            python -m src.train
+          fi
+
+      - name: Run evaluation if missing
+        run: |
+          if [ ! -f models/m_backtest_scores.json ]; then
+            python -m src.evaluate
+          fi
+
+      - name: Export site data
+        run: python scripts/export_site_data.py
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "docs/"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

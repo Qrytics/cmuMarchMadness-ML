@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMU March Madness ML — Model Dashboard</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .model-arch { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+    .arch-block { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; text-align: center; flex: 1; min-width: 120px; }
+    .arch-block .arch-name { font-weight: 700; color: var(--accent-blue); }
+    .arch-block .arch-detail { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; }
+    .arrow { color: var(--cmu-red); font-size: 1.5rem; }
+    .pipeline-step { display: flex; align-items: flex-start; gap: 15px; padding: 15px 0; border-bottom: 1px solid var(--border); }
+    .step-num { background: var(--cmu-red); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+    .step-content h4 { color: white; margin-bottom: 5px; }
+    .step-content p { font-size: 0.88rem; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="logo">🏀 <span>CMU March Madness ML</span></a>
+    <ul>
+      <li><a href="index.html" class="active">Dashboard</a></li>
+      <li><a href="bracket.html">Bracket</a></li>
+      <li><a href="model.html">Model Details</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>🏀 March Madness ML</h1>
+  <p>ML-powered NCAA tournament bracket predictions using XGBoost + LightGBM ensemble. Trained on 15+ years of historical basketball data.</p>
+  <div class="hero-badges">
+    <span class="badge badge-red">CMU Competition 2026</span>
+    <span class="badge badge-outline">Men's + Women's</span>
+    <span class="badge badge-green">Regular + Progressive Brackets</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Key Stats -->
+  <section class="section">
+    <h2 class="section-title">Competition <span>Overview</span></h2>
+    <p class="section-sub">Second Annual CMU March Madness Machine Learning Competition — Deadline: March 17 at Noon EDT</p>
+
+    <div class="stat-grid" id="statsGrid">
+      <div class="stat-tile"><div class="stat-value" id="mAccuracy">—</div><div class="stat-label">Men's CV Accuracy</div></div>
+      <div class="stat-tile"><div class="stat-value" id="wAccuracy">—</div><div class="stat-label">Women's CV Accuracy</div></div>
+      <div class="stat-tile"><div class="stat-value">72,390</div><div class="stat-label">Men's Predictions</div></div>
+      <div class="stat-tile"><div class="stat-value">71,631</div><div class="stat-label">Women's Predictions</div></div>
+      <div class="stat-tile"><div class="stat-value">3</div><div class="stat-label">Model Ensemble</div></div>
+      <div class="stat-tile"><div class="stat-value">28</div><div class="stat-label">Features</div></div>
+    </div>
+  </section>
+
+  <!-- Backtest Performance -->
+  <section class="section">
+    <h2 class="section-title">Historical <span>Backtest</span></h2>
+    <p class="section-sub">Walk-forward cross-validation: trained on prior seasons, tested on each subsequent season.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('men')">Men's Tournament</button>
+      <button class="tab-btn" onclick="switchTab('women')">Women's Tournament</button>
+    </div>
+
+    <div id="menTab" class="tab-panel active">
+      <div class="grid-2">
+        <div class="card">
+          <h3>📊 Game Accuracy by Season</h3>
+          <div class="chart-container"><canvas id="mAccChart"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>🏆 Bracket Score by Season</h3>
+          <div class="chart-container"><canvas id="mScoreChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="womenTab" class="tab-panel">
+      <div class="grid-2">
+        <div class="card">
+          <h3>📊 Game Accuracy by Season</h3>
+          <div class="chart-container"><canvas id="wAccChart"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>🏆 Bracket Score by Season</h3>
+          <div class="chart-container"><canvas id="wScoreChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>Note:</strong> These results are from synthetic training data. With real Kaggle NCAA data, top models typically achieve <strong>70–75% accuracy</strong> on tournament games. Connect real Kaggle data (see <a href="model.html" style="color:var(--accent-blue)">Model Details</a>) to unlock production-quality predictions.
+    </div>
+  </section>
+
+  <!-- Model Architecture -->
+  <section class="section">
+    <h2 class="section-title">Model <span>Architecture</span></h2>
+    <p class="section-sub">Ensemble of complementary ML models, each contributing different strengths.</p>
+
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="model-arch">
+        <div class="arch-block">
+          <div class="arch-name">XGBoost</div>
+          <div class="arch-detail">300 trees, depth 4<br>Weight: 40%</div>
+        </div>
+        <div class="arrow">+</div>
+        <div class="arch-block">
+          <div class="arch-name">LightGBM</div>
+          <div class="arch-detail">300 trees, depth 4<br>Weight: 40%</div>
+        </div>
+        <div class="arrow">+</div>
+        <div class="arch-block">
+          <div class="arch-name">Logistic Reg.</div>
+          <div class="arch-detail">L2 regularized<br>Weight: 20%</div>
+        </div>
+        <div class="arrow">=</div>
+        <div class="arch-block" style="border-color: var(--accent-green);">
+          <div class="arch-name" style="color: var(--accent-green);">Ensemble</div>
+          <div class="arch-detail">Win probability<br>per matchup</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🔧 ML Pipeline</h3>
+      <div class="pipeline-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Data Collection</h4>
+          <p>15+ seasons of NCAA basketball data including regular season games, tournament results, team rankings (Massey/NET/KPI), and seedings. Features include all available box-score statistics.</p>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Feature Engineering</h4>
+          <p>Per-team season averages → differential features (team A minus team B). 28 features per matchup including win%, point differential, shooting efficiency, rebounds, assists, turnovers, steals, blocks, and rankings.</p>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Walk-Forward Training</h4>
+          <p>Models trained on seasons up to year N, validated on season N+1. This prevents data leakage and reflects real-world deployment where we only have past data at prediction time.</p>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Prediction Generation</h4>
+          <p>All C(381,2) = 72,390 men's team pairs and C(379,2) = 71,631 women's pairs are predicted. Output: CSV files with WTeamID/LTeamID columns per competition format.</p>
+        </div>
+      </div>
+      <div class="pipeline-step" style="border-bottom: none;">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h4>Bracket Simulation</h4>
+          <p>Both Regular (pre-tournament) and Progressive (updated after each round) brackets are supported. Historical backtesting validates performance across previous tournaments.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Importance -->
+  <section class="section">
+    <h2 class="section-title">Feature <span>Importance</span></h2>
+    <p class="section-sub">Top features driving predictions (averaged across XGBoost and LightGBM).</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>🏀 Men's Top Features</h3>
+        <div id="mFeatTable"><div class="spinner"></div></div>
+      </div>
+      <div class="card">
+        <h3>🏀 Women's Top Features</h3>
+        <div id="wFeatTable"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scoring System -->
+  <section class="section">
+    <h2 class="section-title">Scoring <span>System</span></h2>
+    <p class="section-sub">Points are awarded for each correct prediction. A perfect bracket scores 196 points.</p>
+
+    <div class="card">
+      <div class="stat-grid">
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">1</div><div class="stat-label">Round 1 (32 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">2</div><div class="stat-label">Round 2 (16 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">4</div><div class="stat-label">Elite 8 (8 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">8</div><div class="stat-label">Quarterfinals (4 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--accent-blue);">16</div><div class="stat-label">Semifinals (2 games)</div></div>
+        <div class="stat-tile"><div class="stat-value" style="color: var(--cmu-gold);">32</div><div class="stat-label">Championship (1 game)</div></div>
+      </div>
+      <div class="info-box" style="margin-top: 15px;">
+        <strong>Max Score:</strong> 32×1 + 16×2 + 8×4 + 4×8 + 2×16 + 1×32 = 32+32+32+32+32+32 = <strong style="color:var(--cmu-gold)">196 points</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section class="section">
+    <h2 class="section-title">Quick <span>Start</span></h2>
+    <p class="section-sub">Get up and running with the full pipeline in minutes.</p>
+
+    <div class="card">
+      <pre><code># 1. Clone and install
+git clone https://github.com/Qrytics/cmuMarchMadness-ML
+cd cmuMarchMadness-ML
+pip install -r requirements.txt
+
+# 2. Generate sample data (or use real Kaggle data)
+python scripts/generate_sample_data.py
+
+# 3. Train models (both Men's and Women's)
+python -m src.train
+
+# 4. Evaluate historical performance
+python -m src.evaluate
+
+# 5. Generate tournament predictions
+python -m src.predict
+
+# Predictions saved to:
+#   predictions/MTourneyPredictions.csv  (72,390 rows)
+#   predictions/WTourneyPredictions.csv  (71,631 rows)</code></pre>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>CMU March Madness ML Competition 2026 — <a href="https://github.com/Qrytics/cmuMarchMadness-ML">GitHub</a></p>
+    <p style="margin-top: 8px;">Data: Kaggle March Machine Learning Mania | Models: XGBoost + LightGBM + Logistic Regression</p>
+  </div>
+</footer>
+
+<script>
+// Chart.js defaults for dark theme
+Chart.defaults.color = '#a0a0b0';
+Chart.defaults.borderColor = '#2a2a4a';
+
+// Load and render data
+async function loadData() {
+  // Load metrics
+  try {
+    const mMetrics = await fetch('data/m_metrics.json').then(r => r.json());
+    const wMetrics = await fetch('data/w_metrics.json').then(r => r.json());
+    document.getElementById('mAccuracy').textContent = (mMetrics.cv_accuracy_mean * 100).toFixed(1) + '%';
+    document.getElementById('wAccuracy').textContent = (wMetrics.cv_accuracy_mean * 100).toFixed(1) + '%';
+  } catch(e) { console.log('Metrics not available:', e); }
+
+  // Load backtest scores
+  try {
+    const mScores = await fetch('data/m_backtest_scores.json').then(r => r.json());
+    const wScores = await fetch('data/w_backtest_scores.json').then(r => r.json());
+    renderBacktestCharts(mScores, 'm');
+    renderBacktestCharts(wScores, 'w');
+  } catch(e) { console.log('Backtest data not available:', e); }
+
+  // Load feature importance
+  try {
+    const mFeat = await fetch('data/m_feature_importance.csv').then(r => r.text());
+    const wFeat = await fetch('data/w_feature_importance.csv').then(r => r.text());
+    renderFeatTable(mFeat, 'mFeatTable');
+    renderFeatTable(wFeat, 'wFeatTable');
+  } catch(e) { console.log('Feature importance not available:', e); }
+}
+
+function renderBacktestCharts(scores, prefix) {
+  const seasons = scores.map(s => s.season);
+  const accs = scores.map(s => (s.accuracy * 100).toFixed(1));
+  const bracketScores = scores.map(s => s.total_score);
+
+  new Chart(document.getElementById(prefix + 'AccChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: seasons,
+      datasets: [{
+        label: 'Accuracy %',
+        data: accs,
+        backgroundColor: 'rgba(79,172,254,0.7)',
+        borderColor: '#4facfe',
+        borderWidth: 1,
+      }, {
+        label: 'Random baseline',
+        data: seasons.map(() => 50),
+        type: 'line',
+        borderColor: '#c41230',
+        borderDash: [5,5],
+        pointRadius: 0,
+        fill: false,
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 11 } } } }, scales: { y: { min: 0, max: 100 } } }
+  });
+
+  new Chart(document.getElementById(prefix + 'ScoreChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: seasons,
+      datasets: [{
+        label: 'Bracket Score',
+        data: bracketScores,
+        backgroundColor: 'rgba(0,212,170,0.7)',
+        borderColor: '#00d4aa',
+        borderWidth: 1,
+      }, {
+        label: 'Max (196)',
+        data: seasons.map(() => 196),
+        type: 'line',
+        borderColor: '#f5c518',
+        borderDash: [5,5],
+        pointRadius: 0,
+        fill: false,
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 11 } } } }, scales: { y: { min: 0, max: 220 } } }
+  });
+}
+
+function renderFeatTable(csv, containerId) {
+  const lines = csv.trim().split('\n').slice(1, 11); // top 10
+  const maxVal = parseFloat(lines[0].split(',')[1]);
+  let html = '<table><thead><tr><th>Feature</th><th>Importance</th><th>Bar</th></tr></thead><tbody>';
+  for (const line of lines) {
+    const [feat, imp] = line.split(',');
+    const pct = (parseFloat(imp) / maxVal * 100).toFixed(0);
+    const label = feat.replace('diff_', '').replace('Avg', '').replace('Pct', '%');
+    html += `<tr>
+      <td>${label}</td>
+      <td>${parseFloat(imp).toFixed(4)}</td>
+      <td><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById(containerId).innerHTML = html;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tab === 'men' ? 'menTab' : 'womenTab').classList.add('active');
+  event.target.classList.add('active');
+}
+
+loadData();
+</script>
+</body>
+</html>
