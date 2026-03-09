@@ -3,9 +3,10 @@ Training script for the CMU March Madness ML Competition.
 Trains separate models for men's and women's tournaments.
 
 Usage:
-    python -m src.train          # train both M and W models using sample data
+    python -m src.train          # train both M and W models using real/sample data
     python -m src.train --gender M --data-dir data/raw
     python -m src.train --gender W --data-dir data/raw
+    python -m src.train --tune --tune-trials 50   # enable auto-tuning with Optuna
 """
 
 import argparse
@@ -24,7 +25,8 @@ RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 
-def train_gender(gender="M", data_dir=None, cv_folds=5, save=True):
+def train_gender(gender="M", data_dir=None, cv_folds=5, save=True,
+                 tune=False, tune_trials=50, tune_timeout=None):
     """
     Train and evaluate a model for the given gender.
 
@@ -33,11 +35,20 @@ def train_gender(gender="M", data_dir=None, cv_folds=5, save=True):
     gender : str
         Tournament gender: 'M' for Men's, 'W' for Women's.
     data_dir : str or None
-        Directory containing Kaggle-format CSV files. If None, uses sample data.
+        Directory containing Kaggle-format CSV files. If None, uses Kaggle
+        data in data/raw/ (extracted from the competition zip), then falls
+        back to sample data.
     cv_folds : int
         Number of seasons to use in walk-forward cross-validation.
     save : bool
         Whether to save the trained model and metrics to disk.
+    tune : bool
+        If True, run Optuna hyperparameter tuning before training the final
+        model (auto-improvement mode).
+    tune_trials : int
+        Number of Optuna trials to run when tune=True.
+    tune_timeout : float or None
+        Maximum time in seconds for the tuning phase.
 
     Returns
     -------
@@ -65,13 +76,34 @@ def train_gender(gender="M", data_dir=None, cv_folds=5, save=True):
     X = train_df[feature_cols].values
     y = train_df["label"].values
 
-    # Cross-validation using season as fold to simulate real validation
+    # ------------------------------------------------------------------
+    # Optional auto-tuning phase
+    # ------------------------------------------------------------------
+    best_params = {}
+    if tune:
+        print(f"\n  Auto-tuning hyperparameters with Optuna "
+              f"({tune_trials} trials)...")
+        tuner = MarchMadnessModel(gender=gender)
+        best_params = tuner.tune(
+            X, y,
+            feature_names=feature_cols,
+            n_trials=tune_trials,
+            timeout=tune_timeout,
+        )
+        # Save best params alongside metrics
+        params_path = os.path.join(RESULTS_DIR, f"{gender.lower()}_best_params.json")
+        with open(params_path, "w") as f:
+            json.dump(best_params, f, indent=2)
+        print(f"  Best params saved to {params_path}")
+
+    # ------------------------------------------------------------------
+    # Walk-forward cross-validation (train on past, validate on next season)
+    # ------------------------------------------------------------------
     seasons = train_df["season"].values
     unique_seasons = sorted(train_df["season"].unique())
+    n_wf = min(5, len(unique_seasons) - 2)
 
-    # Walk-forward CV: train on past seasons, validate on next season
     wf_scores = {"accuracy": [], "log_loss": [], "auc": []}
-    n_wf = min(5, len(unique_seasons) - 2)  # use last n seasons for validation
 
     for val_season in unique_seasons[-n_wf:]:
         train_mask = seasons < val_season
@@ -83,7 +115,7 @@ def train_gender(gender="M", data_dir=None, cv_folds=5, save=True):
         X_tr, y_tr = X[train_mask], y[train_mask]
         X_val, y_val = X[val_mask], y[val_mask]
 
-        m = MarchMadnessModel(gender=gender)
+        m = MarchMadnessModel(gender=gender, best_params=best_params)
         m.fit(X_tr, y_tr, feature_names=feature_cols)
         proba = m.predict_proba(X_val)
         pred = (proba >= 0.5).astype(int)
@@ -105,6 +137,7 @@ def train_gender(gender="M", data_dir=None, cv_folds=5, save=True):
         "cv_log_loss_std": float(np.std(wf_scores["log_loss"])),
         "cv_auc_mean": float(np.mean(wf_scores["auc"])),
         "cv_auc_std": float(np.std(wf_scores["auc"])),
+        "auto_tuned": tune,
     }
 
     print(f"\n  Walk-forward CV Results:")
@@ -112,9 +145,11 @@ def train_gender(gender="M", data_dir=None, cv_folds=5, save=True):
     print(f"  Log Loss: {metrics['cv_log_loss_mean']:.3f} ± {metrics['cv_log_loss_std']:.3f}")
     print(f"  AUC:      {metrics['cv_auc_mean']:.3f} ± {metrics['cv_auc_std']:.3f}")
 
+    # ------------------------------------------------------------------
     # Train final model on ALL data
+    # ------------------------------------------------------------------
     print(f"\n  Training final model on all {len(train_df)} samples...")
-    final_model = MarchMadnessModel(gender=gender)
+    final_model = MarchMadnessModel(gender=gender, best_params=best_params)
     final_model.fit(X, y, feature_names=feature_cols)
 
     if save:
@@ -143,13 +178,27 @@ def main():
                         help="Directory containing Kaggle data files")
     parser.add_argument("--no-save", action="store_true",
                         help="Do not save the model after training")
+    parser.add_argument("--tune", action="store_true",
+                        help="Run Optuna hyperparameter tuning before training "
+                             "(auto-improvement mode)")
+    parser.add_argument("--tune-trials", type=int, default=50,
+                        help="Number of Optuna trials (default: 50)")
+    parser.add_argument("--tune-timeout", type=float, default=None,
+                        help="Max seconds for tuning phase (optional)")
     args = parser.parse_args()
 
     genders = ["M", "W"] if args.gender == "both" else [args.gender]
     all_metrics = {}
 
     for g in genders:
-        model, metrics = train_gender(g, data_dir=args.data_dir, save=not args.no_save)
+        model, metrics = train_gender(
+            g,
+            data_dir=args.data_dir,
+            save=not args.no_save,
+            tune=args.tune,
+            tune_trials=args.tune_trials,
+            tune_timeout=args.tune_timeout,
+        )
         all_metrics[g] = metrics
 
     # Save combined metrics
@@ -162,3 +211,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
