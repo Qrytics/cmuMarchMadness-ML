@@ -1,13 +1,24 @@
 {
+  "M": {
+    "gender": "M",
+    "n_samples": 2898,
+    "n_features": 28,
+    "cv_accuracy_mean": 0.6466983265490728,
+    "cv_accuracy_std": 0.020278975680842998,
+    "cv_log_loss_mean": 0.6395832824580412,
+    "cv_log_loss_std": 0.06808683846321759,
+    "cv_auc_mean": 0.7077369106116145,
+    "cv_auc_std": 0.04225666388550442
+  },
   "W": {
     "gender": "W",
-    "n_samples": 2016,
+    "n_samples": 1922,
     "n_features": 28,
-    "cv_accuracy_mean": 0.5079365079365079,
-    "cv_accuracy_std": 0.03441187839472826,
-    "cv_log_loss_mean": 0.7181574546478341,
-    "cv_log_loss_std": 0.031336274512182176,
-    "cv_auc_mean": 0.5223985890652558,
-    "cv_auc_std": 0.052350543208759946
+    "cv_accuracy_mean": 0.6887467424780858,
+    "cv_accuracy_std": 0.010482220266205622,
+    "cv_log_loss_mean": 0.5910715257304322,
+    "cv_log_loss_std": 0.06108330822913288,
+    "cv_auc_mean": 0.7690286622639781,
+    "cv_auc_std": 0.041126450955554526
   }
 }
