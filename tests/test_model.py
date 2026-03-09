@@ -134,5 +134,7 @@ class TestModelAccuracy:
         preds = model.predict(X_val)
         acc = (preds == y_val).mean()
 
-        # Should at minimum match or beat random (50%) — with synthetic data, hard to guarantee
+        # The 35% threshold reflects the noise of synthetic data.
+        # With real Kaggle NCAA data, top models typically achieve 70-75% accuracy.
+        # If this test fails with real data, investigate whether signal features are missing.
         assert acc >= 0.35, f"Accuracy {acc:.2%} is too low (below 35%)"

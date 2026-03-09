@@ -27,8 +27,9 @@ from src.model import MarchMadnessModel
 PRED_DIR = os.path.join(os.path.dirname(__file__), "..", "predictions")
 os.makedirs(PRED_DIR, exist_ok=True)
 
-# Prediction year for the 2026 tournament
-PRED_SEASON = 2025  # Use 2024-25 regular season stats for 2026 tournament
+# The stats season: we use 2024-25 regular season statistics (Season=2025 in data)
+# to make predictions for the 2026 NCAA tournament
+STATS_SEASON = 2025
 
 
 def generate_predictions(gender="M", data_dir=None, save=True):

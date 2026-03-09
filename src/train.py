@@ -27,7 +27,24 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 def train_gender(gender="M", data_dir=None, cv_folds=5, save=True):
     """
     Train and evaluate a model for the given gender.
-    Returns the trained model and metrics dict.
+
+    Parameters
+    ----------
+    gender : str
+        Tournament gender: 'M' for Men's, 'W' for Women's.
+    data_dir : str or None
+        Directory containing Kaggle-format CSV files. If None, uses sample data.
+    cv_folds : int
+        Number of seasons to use in walk-forward cross-validation.
+    save : bool
+        Whether to save the trained model and metrics to disk.
+
+    Returns
+    -------
+    tuple[MarchMadnessModel, dict]
+        Trained model and a metrics dict with keys:
+        cv_accuracy_mean, cv_accuracy_std, cv_log_loss_mean, cv_log_loss_std,
+        cv_auc_mean, cv_auc_std, n_samples, n_features.
     """
     print(f"\n{'='*60}")
     print(f"Training {gender} model...")

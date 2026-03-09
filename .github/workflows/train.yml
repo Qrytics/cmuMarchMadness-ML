@@ -13,7 +13,7 @@ on:
         default: "false"
         type: boolean
   schedule:
-    # Run every Monday at 6 AM UTC (weekly refresh before tournament)
+    # Run every Monday at 6 AM UTC — weekly model refresh to incorporate latest data
     - cron: "0 6 * * 1"
 
 jobs:
