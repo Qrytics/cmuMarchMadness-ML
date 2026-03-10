@@ -222,7 +222,7 @@ class TestExternalDataLoaders:
             "AvgRank": 50.0, "BestRank": 40,
             "KP_AdjEM": 5.0, "BT_AdjOE": 108.0, "BT_AdjDE": 103.0,
             "NET_Rank": 30, "REC_Composite": 50.0, "PS_TopPRPG": 3.0,
-            "DRAFT_TopPick": float("nan"), "DRAFT_NumRound1": 0,
+            "DRAFT_TopPick": None, "DRAFT_NumRound1": 0,
         }
         feats = build_matchup_features(f1, f2, seed1="W01", seed2="W16")
         assert "diff_KP_AdjEM" in feats
