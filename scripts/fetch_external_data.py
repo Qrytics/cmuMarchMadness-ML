@@ -121,6 +121,7 @@ import pandas as pd
 EXTERNAL_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "external")
 KAGGLE_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
 SAMPLE_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "sample")
+DOWNLOADED_DIR = os.path.join(os.path.dirname(__file__), "..", "downloaded_data")
 
 os.makedirs(EXTERNAL_DIR, exist_ok=True)
 
@@ -418,6 +419,179 @@ def map_only(file_path: str, name_col: str = "Team", gender: str = "M"):
 
 
 # ---------------------------------------------------------------------------
+# Stage downloaded_data/ files into data/external/ with TeamID mapping
+# ---------------------------------------------------------------------------
+
+def stage_downloaded_data(season: int, gender: str = "M"):
+    """Stage all CSV files from downloaded_data/ into data/external/.
+
+    This function reads each file from the ``downloaded_data/`` directory,
+    maps team names to Kaggle TeamIDs, and writes the cleaned version to
+    ``data/external/``.  It handles the known schema variants for each source.
+
+    Parameters
+    ----------
+    season : int
+        Tournament season year (e.g. 2026).
+    gender : str
+        "M" or "W".  External data is currently men's-only.
+    """
+    import io
+
+    spellings = load_team_spellings(gender)
+    if spellings.empty:
+        print("  WARNING: MTeamSpellings.csv not found – TeamID mapping will be skipped.")
+
+    def _norm(s):
+        return re.sub(r"[^a-z0-9]", "", str(s).lower())
+
+    spell_map = {_norm(r.TeamNameSpelling): r.TeamID
+                 for r in spellings.itertuples(index=False)}
+
+    def _map(df, col):
+        df = df.copy()
+        df["TeamID"] = df[col].apply(lambda n: spell_map.get(_norm(str(n)), pd.NA))
+        matched = df["TeamID"].notna().sum()
+        print(f"    TeamID matched: {matched}/{len(df)}")
+        return df
+
+    # Abbreviation overrides for NCAA NET rankings (uses short names not in spellings file)
+    _NET_OVERRIDES: dict = {
+        "N. Carolina": 1314, "Miami": 1274, "Va. Tech": 1439,
+        "N. Iowa": 1320, "Okla. St.": 1329, "Colo. St.": 1161,
+        "George Wash.": 1203, "S. Carolina": 1376, "Miss. St.": 1280,
+        "San Fran.": 1362, "FAU": 1194, "UT-Rio Grande Valley": 1410,
+        "Wash. St.": 1450, "St. Bona.": 1382, "Ga. Tech": 1210,
+        "LMU": 1258, "N. Mex. St.": 1308, "Queens": 1474,
+        "App. St.": 1111, "TX A&M-CC": 1394, "S. Dak. St.": 1355,
+        "Jax. State": 1240, "La. Tech": 1256, "So. Miss": 1379,
+        "C. Carolina": 1157, "UNC-Ash.": 1421, "Bethune-Cook.": 1126,
+        "LBSU": 1253, "So. Utah": 1381, "CCSU": 1148,
+        "Loyola Chi.": 1260, "W. Georgia": 1480, "Tenn. Tech": 1399,
+        "N. Arizona": 1319, "Clev. St.": 1156, "Texas So.": 1411,
+        "IUI": 1237, "UAlbany": 1107, "N.J. Tech": 1312,
+        "Cal-Baker.": 1167, "N. Alabama": 1466, "New Hamp.": 1306,
+        "Saint Francis": 1384, "UL-Monroe": 1419,
+    }
+
+    def _map_with_overrides(df, col, overrides=None):
+        df = df.copy()
+        def _resolve(name):
+            if overrides and name in overrides:
+                return overrides[name]
+            return spell_map.get(_norm(str(name)), pd.NA)
+        df["TeamID"] = df[col].apply(_resolve)
+        matched = df["TeamID"].notna().sum()
+        print(f"    TeamID matched: {matched}/{len(df)}")
+        return df
+
+    os.makedirs(EXTERNAL_DIR, exist_ok=True)
+
+    # --- KenPom ---
+    src = os.path.join(DOWNLOADED_DIR, f"kenpom_{season}.csv")
+    dst = os.path.join(EXTERNAL_DIR, f"kenpom_{season}.csv")
+    if os.path.exists(src) and not os.path.exists(dst):
+        print(f"  Staging KenPom {season}...")
+        df = pd.read_csv(src)
+        df["Season"] = season
+        df = df.rename(columns={
+            "NetRtg": "KP_AdjEM", "ORtg": "KP_AdjO", "DRtg": "KP_AdjD",
+            "AdjT": "KP_AdjT", "Luck": "KP_Luck",
+            "SOS_NetRtg": "KP_SOS_AdjEM", "SOS_ORtg": "KP_OppO",
+            "SOS_DRtg": "KP_OppD", "NCSOS_NetRtg": "KP_NCSOS_AdjEM",
+        })
+        df = _map(df, "Team")
+        df.to_csv(dst, index=False)
+        print(f"    Saved to {dst}")
+
+    # --- Barttorvik ---
+    src = os.path.join(DOWNLOADED_DIR, f"barttorvik_{season}.csv")
+    dst = os.path.join(EXTERNAL_DIR, f"barttorvik_{season}.csv")
+    if os.path.exists(src) and not os.path.exists(dst):
+        print(f"  Staging Barttorvik {season}...")
+        bt = pd.read_csv(src, header=None)
+        bt_cols = [
+            "Team", "BT_AdjOE", "BT_AdjDE", "BT_Barthag", "WL", "Wins", "Games",
+            "BT_EFG_O", "BT_EFG_D", "BT_2P_O", "BT_2P_D", "BT_FTR", "BT_FTRD",
+            "BT_OR_Pct", "BT_DR_Pct", "BT_AdjT",
+            "col16", "col17", "col18", "col19", "col20", "col21",
+            "col22", "col23", "col24", "col25", "col26",
+            "col27", "col28", "col29", "Season", "col31", "col32", "col33",
+            "BT_AdjNetEff", "BT_AvgHgt", "col36",
+        ]
+        bt.columns = bt_cols[:len(bt.columns)]
+        bt = _map(bt, "Team")
+        keep = ["Team", "TeamID", "Season"] + [c for c in bt.columns if c.startswith("BT_")]
+        bt[[c for c in keep if c in bt.columns]].to_csv(dst, index=False)
+        print(f"    Saved to {dst}")
+
+    # --- NET Rankings ---
+    src = os.path.join(DOWNLOADED_DIR, f"net_rankings_{season}.csv")
+    dst = os.path.join(EXTERNAL_DIR, f"net_rankings_{season}.csv")
+    if os.path.exists(src) and not os.path.exists(dst):
+        print(f"  Staging NET rankings {season}...")
+        df = pd.read_csv(src)
+        df["Season"] = season
+        df = df.rename(columns={"Rank": "NET_Rank", "NET": "NET_Rating"})
+        df = _map_with_overrides(df, "Team", overrides=_NET_OVERRIDES)
+        keep = [c for c in ["Team", "TeamID", "Season", "NET_Rank", "NET_Rating"] if c in df.columns]
+        df[keep].to_csv(dst, index=False)
+        print(f"    Saved to {dst}")
+
+    # --- Player Stats ---
+    src = os.path.join(DOWNLOADED_DIR, f"player_stats_{season}.csv")
+    dst = os.path.join(EXTERNAL_DIR, f"player_stats_{season}.csv")
+    if os.path.exists(src) and not os.path.exists(dst):
+        print(f"  Staging player stats {season}...")
+        df = pd.read_csv(src)
+        df = _map(df, "Team")
+        df.to_csv(dst, index=False)
+        print(f"    Saved to {dst}")
+
+    # --- Recruiting ---
+    src = os.path.join(DOWNLOADED_DIR, f"recruiting_{season}.csv")
+    dst = os.path.join(EXTERNAL_DIR, f"recruiting_{season}.csv")
+    if os.path.exists(src) and not os.path.exists(dst):
+        print(f"  Staging recruiting {season}...")
+        with open(src) as f:
+            content = f.read()
+        header, rest = content.split("\n", 1)
+        rows_text = rest.replace("\n", " ").strip()
+        parts = rows_text.split(f" {season},")
+        rows = []
+        first = parts[0]
+        rows.append(first if first.startswith(f"{season},") else f"{season},{first}")
+        for p in parts[1:]:
+            rows.append(f"{season},{p}")
+        data_str = header + "\n" + "\n".join(rows)
+        df = pd.read_csv(io.StringIO(data_str))
+        df = _map(df, "TeamName")
+        df = df.rename(columns={"Composite": "REC_Composite",
+                                 "NumCommits": "REC_NumCommits",
+                                 "Rank": "REC_Rank"})
+        df.to_csv(dst, index=False)
+        print(f"    Saved to {dst}")
+
+    # --- Draft Prospects ---
+    src = os.path.join(DOWNLOADED_DIR, f"draft_{season}.csv")
+    dst = os.path.join(EXTERNAL_DIR, f"draft_{season}.csv")
+    if os.path.exists(src) and not os.path.exists(dst):
+        print(f"  Staging NBA Draft prospects {season}...")
+        df = pd.read_csv(src)
+        # Drop international players (no college TeamID)
+        if "School" in df.columns:
+            intl = {"Spain", "France", "Croatia", "Serbia", "Australia",
+                    "Latvia", "Germany", "Turkey", "Lithuania", "Bosnia"}
+            df = df[~df["School"].isin(intl) & df["School"].notna()].copy()
+            df = _map(df, "School")
+        df.to_csv(dst, index=False)
+        print(f"    Saved to {dst}")
+
+    print(f"\n  Done staging.  Files written to {EXTERNAL_DIR}")
+    print("  Re-run training: python -m src.train\n")
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
@@ -429,6 +603,9 @@ def main():
                         help="Season year (default: 2026)")
     parser.add_argument("--map-only", action="store_true",
                         help="Only apply team-name mapping to an existing file")
+    parser.add_argument("--stage", action="store_true",
+                        help="Stage files from downloaded_data/ into data/external/ "
+                             "(applies TeamID mapping automatically)")
     parser.add_argument("--file", type=str, default=None,
                         help="Path to the file to map (used with --map-only)")
     parser.add_argument("--name-col", type=str, default="Team",
@@ -445,6 +622,13 @@ def main():
             print("ERROR: --file is required with --map-only")
             sys.exit(1)
         map_only(args.file, args.name_col, args.gender)
+        return
+
+    if args.stage:
+        print(f"\n{'='*65}")
+        print(f" Staging downloaded_data/ → data/external/ (season {args.season})")
+        print(f"{'='*65}\n")
+        stage_downloaded_data(args.season, args.gender)
         return
 
     season = args.season

@@ -18,6 +18,12 @@ Features fall into several groups
 11. Home/away/neutral splits (HomeWinPct, AwayWinPct, NeutralWinPct)
 12. Seed features (SeedDiff, HigherSeed, SeedSum, HistoricUpsetProb)
 13. Interaction features (SeedDiff × NetEff, SeedDiff × SoS, etc.)
+14. KenPom: AdjEM, AdjO, AdjD, AdjT, Luck, SOS metrics
+15. Barttorvik: AdjOE, AdjDE, Barthag, Tempo, shooting/rebounding rates
+16. NCAA NET ranking
+17. Recruiting composite score
+18. Player stats: top PRPG!, avg TS%, usage, star-player count
+19. NBA Draft prospects: top pick number, round-1 picks
 """
 
 import numpy as np
@@ -150,6 +156,21 @@ def build_matchup_features(team1_feats, team2_feats, seed1=None, seed2=None):
         "ConfStrength", "ConfTourneyApps",
         # Conference tournament form
         "ConfTourneyWinPct", "ConfTourneyPointDiff",
+        # KenPom
+        "KP_AdjEM", "KP_AdjO", "KP_AdjD", "KP_AdjT", "KP_Luck",
+        "KP_SOS_AdjEM", "KP_OppO", "KP_OppD", "KP_NCSOS_AdjEM",
+        # Barttorvik
+        "BT_AdjOE", "BT_AdjDE", "BT_Barthag", "BT_AdjT",
+        "BT_EFG_O", "BT_EFG_D", "BT_OR_Pct", "BT_DR_Pct",
+        "BT_FTR", "BT_FTRD", "BT_AdjNetEff",
+        # NCAA NET
+        "NET_Rank", "NET_Rating",
+        # Recruiting
+        "REC_Composite", "REC_NumCommits", "REC_Rank",
+        # Player stats
+        "PS_TopPRPG", "PS_AvgTS", "PS_TopUsg", "PS_StarCount",
+        # NBA Draft
+        "DRAFT_TopPick", "DRAFT_NumPicks", "DRAFT_NumRound1",
     ]
 
     feat = {}
@@ -238,6 +259,22 @@ def build_matchup_features(team1_feats, team2_feats, seed1=None, seed2=None):
     feat["interact_RecentForm_TourneyExp"] = recent_diff * tourney_diff
     # NetEff × SoS: strength-of-schedule-adjusted net efficiency signal
     feat["interact_NetEff_SoS"] = net_eff_diff * sos_diff
+
+    # KenPom × Barttorvik consensus: when two elite systems agree, signal is stronger
+    kp_em_diff = feat.get("diff_KP_AdjEM", 0.0)
+    bt_net_diff = feat.get("diff_BT_AdjNetEff", 0.0)
+    feat["interact_KP_BT_AdjEM"] = kp_em_diff * bt_net_diff
+
+    # Seed × KenPom AdjEM: upset detection using gold-standard efficiency
+    feat["interact_SeedDiff_KP_AdjEM"] = seed_diff * kp_em_diff
+
+    # Star-player advantage: top PRPG! differential × seed differential
+    ps_top_diff = feat.get("diff_PS_TopPRPG", 0.0)
+    feat["interact_StarPlayer_SeedDiff"] = ps_top_diff * seed_diff
+
+    # Recruiting pipeline vs. recent form: elite recruiting class that also plays well
+    rec_diff = feat.get("diff_REC_Composite", 0.0)
+    feat["interact_Recruiting_RecentForm"] = rec_diff * recent_diff
 
     return feat
 

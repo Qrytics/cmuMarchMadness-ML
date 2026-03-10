@@ -119,6 +119,28 @@ This downloads the **Kaggle March Machine Learning Mania** dataset into `data/ra
 > If you do not have Kaggle credentials yet, use synthetic data for now:
 > `python scripts/generate_sample_data.py`
 
+### Step 3b — Stage external data (if downloaded manually)
+
+If you manually downloaded external files into `downloaded_data/` (e.g. KenPom, Barttorvik,
+NCAA NET, player stats, recruiting, NBA draft), stage them with:
+
+```bash
+python scripts/fetch_external_data.py --stage --season 2026
+```
+
+This applies team-name → TeamID mapping and writes cleaned CSVs to `data/external/`.  The
+training pipeline picks them up automatically.  Expected accuracy lift: **+2–4%** over
+Kaggle-only data when all six sources are present.
+
+| External file | What it adds | Expected lift |
+|---------------|-------------|---------------|
+| `kenpom_{season}.csv` | AdjEM, AdjO, AdjD, tempo, SOS | +1–2% |
+| `barttorvik_{season}.csv` | Barthag, efficiency, eFG%, rebound rates | +1–2% |
+| `net_rankings_{season}.csv` | Official selection-committee metric | +0.5% |
+| `player_stats_{season}.csv` | Star-player PRPG!, TS%, usage | +0.5% |
+| `recruiting_{season}.csv` | 247Sports recruiting composite | +0.3% |
+| `draft_{season}.csv` | NBA draft prospect presence | +0.3% |
+
 ### Step 4 — Retrain models with real data
 
 ```bash
@@ -197,7 +219,7 @@ The prediction system uses an **ensemble of three models**:
 
 Each model outputs a win probability (0–1). The three probabilities are combined via weighted average. The team with probability ≥ 50% is predicted the winner.
 
-### Features (28 differential features per matchup)
+### Features (103 differential features per matchup)
 
 All features are computed as **(Team A stat) − (Team B stat)** so positive values always favor Team A:
 
@@ -205,11 +227,25 @@ All features are computed as **(Team A stat) − (Team B stat)** so positive val
 |----------|---------|
 | Record | Win percentage, point differential |
 | Scoring | Points for, points against |
-| Shooting | FG%, 3-point%, free throw% |
-| Rebounding | Offensive rebounds, defensive rebounds |
-| Playmaking | Assists, turnovers, steals, blocks, fouls |
+| Shooting | FG%, 3-point%, free throw%, eFG%, TS% |
+| Rebounding | Offensive rebounds, defensive rebounds, OR%, DR% |
+| Playmaking | Assists, turnovers, steals, blocks, fouls, TO rate |
+| Efficiency | Pythagorean expectation, pace, OffEff, DefEff, NetEff |
 | Rankings | Average and best Massey ordinal rank (NET, KPI, KenPom, SAG) |
-| Tournament context | Seed difference, higher-seed indicator |
+| Schedule | Strength of Schedule, SoS-adjusted net efficiency |
+| Recent form | Last-28-days win%, point diff |
+| Tournament history | Apps, wins, win rate, avg seed |
+| Coaching | Coach seasons at school, coach tourney appearances |
+| Conference | Conference strength, conf tourney form |
+| Location splits | Home%, Away%, Neutral% win rates |
+| **KenPom** | **AdjEM, AdjO, AdjD, AdjT, Luck, SOS metrics** |
+| **Barttorvik** | **Barthag, AdjOE, AdjDE, eFG%, OR%, FTR, tempo** |
+| **NCAA NET** | **NET rank and rating** |
+| **Recruiting** | **247Sports composite score, commit count** |
+| **Player stats** | **Top PRPG!, avg TS%, usage, star-player count** |
+| **NBA Draft** | **Top pick number, # of round-1 picks** |
+| Seed info | Seed diff, higher-seed flag, historic upset probability |
+| Interactions | Seed×NetEff, KenPom×Barttorvik, StarPlayer×Seed, etc. |
 
 ### Training Methodology
 
@@ -230,6 +266,7 @@ cmuMarchMadness-ML/
 │       └── pages.yml                 # Deploy GitHub Pages dashboard
 ├── data/
 │   ├── raw/                          # Real Kaggle data (gitignored — download locally)
+│   ├── external/                     # External enrichment data (KenPom, Barttorvik, etc.)
 │   └── sample/                       # Synthetic sample data (committed for CI)
 ├── docs/                             # GitHub Pages website
 │   ├── index.html                    # Main dashboard

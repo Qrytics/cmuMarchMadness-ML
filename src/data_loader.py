@@ -18,6 +18,9 @@ External data (see scripts/fetch_external_data.py for download instructions):
   data/external/barttorvik_{season}.csv – T-Rank adjusted efficiency (free)
   data/external/net_rankings_{season}.csv – NCAA NET rankings (free)
   data/external/kenpom_{season}.csv – KenPom ratings (subscription ~$20/yr)
+  data/external/player_stats_{season}.csv – Player-level stats (PER/TS%/Usg)
+  data/external/recruiting_{season}.csv – 247Sports recruiting composite
+  data/external/draft_{season}.csv – NBA Draft prospect rankings
 """
 
 import os
@@ -846,6 +849,222 @@ def compute_season_stats(season_df):
     return pd.DataFrame(records)
 
 
+# ---------------------------------------------------------------------------
+# External data loaders (KenPom, Barttorvik, NET, player stats,
+# recruiting, NBA draft)
+# ---------------------------------------------------------------------------
+
+def _load_external(filename, season):
+    """Load an external CSV from data/external/, returning empty DataFrame on miss."""
+    path = os.path.join(EXTERNAL_DIR, filename.format(season=season))
+    if os.path.exists(path):
+        return pd.read_csv(path)
+    return pd.DataFrame()
+
+
+def load_kenpom(season):
+    """Load KenPom efficiency ratings for a season from data/external/.
+
+    Expected columns (after staging via scripts/fetch_external_data.py):
+      TeamID, Season, KP_AdjEM, KP_AdjO, KP_AdjD, KP_AdjT, KP_Luck,
+      KP_SOS_AdjEM, KP_OppO, KP_OppD, KP_NCSOS_AdjEM
+    """
+    df = _load_external("kenpom_{season}.csv", season)
+    if df.empty or "TeamID" not in df.columns:
+        return pd.DataFrame()
+    kp_cols = ["TeamID", "Season"] + [c for c in df.columns
+                                       if c.startswith("KP_") and c in df.columns]
+    available = [c for c in kp_cols if c in df.columns]
+    df = df[available].dropna(subset=["TeamID"])
+    df["TeamID"] = df["TeamID"].astype(int)
+    return df
+
+
+def load_barttorvik(season):
+    """Load Barttorvik T-Rank data for a season from data/external/.
+
+    Expected columns (after staging):
+      TeamID, Season, BT_AdjOE, BT_AdjDE, BT_Barthag, BT_AdjT,
+      BT_EFG_O, BT_EFG_D, BT_OR_Pct, BT_DR_Pct, BT_FTR, BT_FTRD,
+      BT_AdjNetEff
+    """
+    df = _load_external("barttorvik_{season}.csv", season)
+    if df.empty or "TeamID" not in df.columns:
+        return pd.DataFrame()
+    bt_cols = ["TeamID", "Season"] + [c for c in df.columns
+                                       if c.startswith("BT_") and c in df.columns]
+    available = [c for c in bt_cols if c in df.columns]
+    df = df[available].dropna(subset=["TeamID"])
+    df["TeamID"] = df["TeamID"].astype(int)
+    return df
+
+
+def load_net_rankings(season):
+    """Load NCAA NET rankings for a season from data/external/.
+
+    Expected columns: TeamID, Season, NET_Rank, NET_Rating
+    """
+    df = _load_external("net_rankings_{season}.csv", season)
+    if df.empty or "TeamID" not in df.columns:
+        return pd.DataFrame()
+    net_cols = [c for c in ["TeamID", "Season", "NET_Rank", "NET_Rating"] if c in df.columns]
+    df = df[net_cols].dropna(subset=["TeamID"])
+    df["TeamID"] = df["TeamID"].astype(int)
+    return df
+
+
+def load_player_stats(season):
+    """Load player-level statistics for a season from data/external/.
+
+    Expected columns: Season, Player, Team, TeamID, Min%, PRPG!, Usg, TS
+    """
+    df = _load_external("player_stats_{season}.csv", season)
+    if df.empty or "TeamID" not in df.columns:
+        return pd.DataFrame()
+    df = df.dropna(subset=["TeamID"])
+    df["TeamID"] = df["TeamID"].astype(int)
+    return df
+
+
+def load_recruiting(season):
+    """Load recruiting composite rankings for a season from data/external/.
+
+    Expected columns: Season, TeamName, TeamID, Composite, NumCommits, Rank
+    """
+    df = _load_external("recruiting_{season}.csv", season)
+    if df.empty or "TeamID" not in df.columns:
+        return pd.DataFrame()
+    rec_cols = [c for c in ["TeamID", "Season", "Composite", "NumCommits", "Rank"]
+                if c in df.columns]
+    df = df[rec_cols].dropna(subset=["TeamID"])
+    df["TeamID"] = df["TeamID"].astype(int)
+    return df.rename(columns={"Composite": "REC_Composite",
+                               "NumCommits": "REC_NumCommits",
+                               "Rank": "REC_Rank"})
+
+
+def load_draft_prospects(season):
+    """Load NBA Draft prospect data for a season from data/external/.
+
+    Expected columns: Season, PlayerName, School, DraftRound, DraftPick, TeamID
+    """
+    df = _load_external("draft_{season}.csv", season)
+    if df.empty or "TeamID" not in df.columns:
+        return pd.DataFrame()
+    df = df.dropna(subset=["TeamID"])
+    df["TeamID"] = df["TeamID"].astype(int)
+    return df
+
+
+# ---------------------------------------------------------------------------
+# Feature computation helpers for external data
+# ---------------------------------------------------------------------------
+
+def compute_external_features(season_stats_df, seasons):
+    """Merge all available external features into season_stats_df.
+
+    For each season present in ``seasons``, loads the matching external
+    CSV files and merges them on (Season, TeamID).  Only seasons that have
+    corresponding files in data/external/ are enriched; others are left
+    with NaN for the new columns (which are filled to 0 later by
+    build_matchup_features).
+
+    Parameters
+    ----------
+    season_stats_df : pd.DataFrame
+        Per-team per-season features from ``compute_season_stats()``.
+    seasons : iterable of int
+        All seasons present in the training data.
+
+    Returns
+    -------
+    pd.DataFrame
+        ``season_stats_df`` with new external-feature columns appended.
+    """
+    # Collect external rows across all seasons
+    kp_rows, bt_rows, net_rows, rec_rows = [], [], [], []
+    ps_rows, draft_rows = [], []
+
+    for season in seasons:
+        kp = load_kenpom(season)
+        if not kp.empty:
+            kp_rows.append(kp)
+
+        bt = load_barttorvik(season)
+        if not bt.empty:
+            bt_rows.append(bt)
+
+        net = load_net_rankings(season)
+        if not net.empty:
+            net_rows.append(net)
+
+        rec = load_recruiting(season)
+        if not rec.empty:
+            rec_rows.append(rec)
+
+        ps = load_player_stats(season)
+        if not ps.empty:
+            ps_rows.append(ps)
+
+        draft = load_draft_prospects(season)
+        if not draft.empty:
+            draft_rows.append(draft)
+
+    # --- KenPom ---
+    if kp_rows:
+        kp_all = pd.concat(kp_rows, ignore_index=True)
+        kp_all = kp_all.drop_duplicates(subset=["Season", "TeamID"])
+        season_stats_df = season_stats_df.merge(kp_all, on=["Season", "TeamID"], how="left")
+
+    # --- Barttorvik ---
+    if bt_rows:
+        bt_all = pd.concat(bt_rows, ignore_index=True)
+        bt_all = bt_all.drop_duplicates(subset=["Season", "TeamID"])
+        season_stats_df = season_stats_df.merge(bt_all, on=["Season", "TeamID"], how="left")
+
+    # --- NET ---
+    if net_rows:
+        net_all = pd.concat(net_rows, ignore_index=True)
+        net_all = net_all.drop_duplicates(subset=["Season", "TeamID"])
+        season_stats_df = season_stats_df.merge(net_all, on=["Season", "TeamID"], how="left")
+
+    # --- Recruiting ---
+    if rec_rows:
+        rec_all = pd.concat(rec_rows, ignore_index=True)
+        rec_all = rec_all.drop_duplicates(subset=["Season", "TeamID"])
+        season_stats_df = season_stats_df.merge(rec_all, on=["Season", "TeamID"], how="left")
+
+    # --- Player stats (aggregate per team: top player PRPG!, avg TS%, star count) ---
+    if ps_rows:
+        ps_all = pd.concat(ps_rows, ignore_index=True)
+        ps_all = ps_all.rename(columns={"PRPG!": "PRPG", "Min%": "MinPct", "TS": "TS_Pct"})
+        for col in ["PRPG", "MinPct", "Usg", "TS_Pct"]:
+            if col in ps_all.columns:
+                ps_all[col] = pd.to_numeric(ps_all[col], errors="coerce")
+        team_ps = ps_all.groupby(["Season", "TeamID"]).agg(
+            PS_TopPRPG=("PRPG", "max"),
+            PS_AvgTS=("TS_Pct", "mean"),
+            PS_TopUsg=("Usg", "max"),
+            PS_StarCount=("PRPG", lambda x: (x >= 5.0).sum()),
+        ).reset_index()
+        season_stats_df = season_stats_df.merge(team_ps, on=["Season", "TeamID"], how="left")
+
+    # --- NBA Draft prospects (per team: top pick number, total picks) ---
+    if draft_rows:
+        draft_all = pd.concat(draft_rows, ignore_index=True)
+        for col in ["DraftPick", "DraftRound"]:
+            if col in draft_all.columns:
+                draft_all[col] = pd.to_numeric(draft_all[col], errors="coerce")
+        team_draft = draft_all.groupby(["Season", "TeamID"]).agg(
+            DRAFT_TopPick=("DraftPick", "min"),
+            DRAFT_NumPicks=("DraftPick", "count"),
+            DRAFT_NumRound1=("DraftRound", lambda x: (x == 1).sum()),
+        ).reset_index()
+        season_stats_df = season_stats_df.merge(team_draft, on=["Season", "TeamID"], how="left")
+
+    return season_stats_df
+
+
 def load_all_data(gender="M", data_dir=None):
     """Load and return all relevant datasets for a gender.
 
@@ -864,6 +1083,17 @@ def load_all_data(gender="M", data_dir=None):
       ConfTourneyWinPct, ConfTourneyPointDiff       – conf tourney form
       ORpct, DRpct                                 – rebound rates (4th factor)
       HomeWinPct, AwayWinPct, NeutralWinPct        – location splits
+
+    External enrichment (when data/external/ files are present):
+      KP_AdjEM, KP_AdjO, KP_AdjD, KP_AdjT, KP_Luck,
+        KP_SOS_AdjEM, KP_OppO, KP_OppD, KP_NCSOS_AdjEM  – KenPom
+      BT_AdjOE, BT_AdjDE, BT_Barthag, BT_AdjT,
+        BT_EFG_O, BT_EFG_D, BT_OR_Pct, BT_DR_Pct,
+        BT_FTR, BT_FTRD, BT_AdjNetEff                    – Barttorvik
+      NET_Rank, NET_Rating                               – NCAA NET
+      REC_Composite, REC_NumCommits, REC_Rank            – recruiting
+      PS_TopPRPG, PS_AvgTS, PS_TopUsg, PS_StarCount      – player stats
+      DRAFT_TopPick, DRAFT_NumPicks, DRAFT_NumRound1     – NBA Draft
     """
     teams = load_teams(gender, data_dir)
     regular = load_regular_season(gender, data_dir)
@@ -910,6 +1140,17 @@ def load_all_data(gender="M", data_dir=None):
     conf_tourney_form = compute_conference_tourney_form(regular, conf_tourney_df)
     if not conf_tourney_form.empty:
         season_stats = season_stats.merge(conf_tourney_form, on=["Season", "TeamID"], how="left")
+
+    # 7. External data enrichment (KenPom, Barttorvik, NET, player stats,
+    #    recruiting, NBA Draft) – only for men's tournament (external files
+    #    currently cover men's D1 only).  Skipped gracefully if files are absent.
+    if gender == "M":
+        seasons = season_stats["Season"].unique()
+        season_stats = compute_external_features(season_stats, seasons)
+        ext_cols = [c for c in season_stats.columns
+                    if c.startswith(("KP_", "BT_", "NET_", "REC_", "PS_", "DRAFT_"))]
+        if ext_cols:
+            print(f"  External features loaded: {ext_cols}")
 
     return {
         "teams": teams,

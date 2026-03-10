@@ -125,3 +125,113 @@ class TestFeatureEngineering:
         feat_cols = get_feature_names(df)
         # Features should be mostly finite (some NaN ok for ranking)
         assert df[feat_cols].isnull().mean().mean() < 0.5
+
+
+EXTERNAL_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "external")
+RAW_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
+
+
+class TestExternalDataLoaders:
+    """Tests for the new external data loaders (KenPom, Barttorvik, NET, etc.)."""
+
+    @pytest.fixture(scope="class")
+    def external_available(self):
+        """Skip class if external data has not been staged."""
+        if not os.path.exists(os.path.join(EXTERNAL_DIR, "kenpom_2026.csv")):
+            pytest.skip("External data not staged — run scripts/fetch_external_data.py first")
+        return True
+
+    def test_kenpom_loader(self, external_available):
+        from src.data_loader import load_kenpom
+        df = load_kenpom(2026)
+        assert not df.empty, "KenPom data should load for season 2026"
+        assert "TeamID" in df.columns
+        assert "KP_AdjEM" in df.columns
+        assert (df["TeamID"] > 0).all()
+        assert len(df) > 200
+
+    def test_barttorvik_loader(self, external_available):
+        from src.data_loader import load_barttorvik
+        df = load_barttorvik(2026)
+        assert not df.empty, "Barttorvik data should load for season 2026"
+        assert "TeamID" in df.columns
+        assert "BT_AdjOE" in df.columns
+        assert "BT_AdjDE" in df.columns
+        assert len(df) > 200
+
+    def test_net_rankings_loader(self, external_available):
+        from src.data_loader import load_net_rankings
+        df = load_net_rankings(2026)
+        assert not df.empty, "NET rankings should load for season 2026"
+        assert "TeamID" in df.columns
+        assert "NET_Rank" in df.columns
+        # Top teams should be ranked low (rank 1 = best)
+        assert df["NET_Rank"].min() == 1
+
+    def test_player_stats_loader(self, external_available):
+        from src.data_loader import load_player_stats
+        df = load_player_stats(2026)
+        assert not df.empty, "Player stats should load for season 2026"
+        assert "TeamID" in df.columns
+        assert len(df) > 100
+
+    def test_recruiting_loader(self, external_available):
+        from src.data_loader import load_recruiting
+        df = load_recruiting(2026)
+        assert not df.empty, "Recruiting data should load for season 2026"
+        assert "TeamID" in df.columns
+        assert "REC_Composite" in df.columns
+
+    def test_draft_loader(self, external_available):
+        from src.data_loader import load_draft_prospects
+        df = load_draft_prospects(2026)
+        assert not df.empty, "Draft data should load for season 2026"
+        assert "TeamID" in df.columns
+
+    def test_external_features_in_season_stats(self, external_available):
+        """External features are merged into season_stats for 2026."""
+        if not os.path.exists(os.path.join(RAW_DIR, "MTeams.csv")):
+            pytest.skip("Kaggle raw data not extracted")
+        from src.data_loader import load_all_data
+        data = load_all_data("M", RAW_DIR)
+        ss = data["season_stats"]
+        ext_cols = [c for c in ss.columns if c.startswith("KP_")]
+        assert len(ext_cols) > 0, "KenPom features should be present in season_stats"
+        # Spot-check: 2026 season should have KenPom coverage for most teams
+        s2026 = ss[ss["Season"] == 2026]
+        coverage = s2026["KP_AdjEM"].notna().mean()
+        assert coverage > 0.8, f"KenPom 2026 coverage too low: {coverage:.1%}"
+
+    def test_new_matchup_features_present(self):
+        """build_matchup_features includes new external feature diffs."""
+        f1 = {
+            "WinPct": 0.8, "AvgPointsFor": 75, "AvgPointsAgainst": 65,
+            "PointDiff": 10, "AvgFGM": 27, "AvgFGA": 60, "AvgFGM3": 8,
+            "AvgFGA3": 20, "AvgFTM": 15, "AvgFTA": 20, "AvgOR": 10, "AvgDR": 25,
+            "AvgAst": 15, "AvgTO": 10, "AvgStl": 6, "AvgBlk": 4, "AvgPF": 18,
+            "AvgRank": 5.0, "BestRank": 3,
+            "KP_AdjEM": 25.0, "BT_AdjOE": 120.0, "BT_AdjDE": 95.0,
+            "NET_Rank": 3, "REC_Composite": 68.0, "PS_TopPRPG": 7.5,
+            "DRAFT_TopPick": 3, "DRAFT_NumRound1": 2,
+        }
+        f2 = {
+            "WinPct": 0.5, "AvgPointsFor": 68, "AvgPointsAgainst": 68,
+            "PointDiff": 0, "AvgFGM": 24, "AvgFGA": 60, "AvgFGM3": 6,
+            "AvgFGA3": 20, "AvgFTM": 12, "AvgFTA": 18, "AvgOR": 9, "AvgDR": 22,
+            "AvgAst": 12, "AvgTO": 13, "AvgStl": 5, "AvgBlk": 3, "AvgPF": 20,
+            "AvgRank": 50.0, "BestRank": 40,
+            "KP_AdjEM": 5.0, "BT_AdjOE": 108.0, "BT_AdjDE": 103.0,
+            "NET_Rank": 30, "REC_Composite": 50.0, "PS_TopPRPG": 3.0,
+            "DRAFT_TopPick": None, "DRAFT_NumRound1": 0,
+        }
+        feats = build_matchup_features(f1, f2, seed1="W01", seed2="W16")
+        assert "diff_KP_AdjEM" in feats
+        assert "diff_BT_AdjOE" in feats
+        assert "diff_NET_Rank" in feats
+        assert "diff_REC_Composite" in feats
+        assert "diff_PS_TopPRPG" in feats
+        assert "diff_DRAFT_TopPick" in feats
+        assert "interact_KP_BT_AdjEM" in feats
+        assert "interact_StarPlayer_SeedDiff" in feats
+        # Better team should have positive KP_AdjEM diff
+        assert feats["diff_KP_AdjEM"] == pytest.approx(20.0)
