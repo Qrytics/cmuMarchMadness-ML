@@ -1,6 +1,23 @@
 """
 Data loading utilities for the CMU March Madness ML Competition.
 Loads NCAA basketball data in Kaggle format (sample or real Kaggle data).
+
+Data sources used
+-----------------
+Kaggle competition files (data/raw/ after running scripts/download_data.py):
+  MRegularSeasonDetailedResults.csv / WRegularSeasonDetailedResults.csv
+  MNCAATourneyDetailedResults.csv   / WNCAATourneyDetailedResults.csv
+  MNCAATourneySeeds.csv             / WNCAATourneySeeds.csv
+  MMasseyOrdinals.csv               (men's only – 40+ rating systems)
+  MTeamCoaches.csv                  (men's only – head-coach tenure)
+  MTeamConferences.csv / WTeamConferences.csv
+  MConferenceTourneyGames.csv / WConferenceTourneyGames.csv
+  MGameCities.csv / WGameCities.csv
+
+External data (see scripts/fetch_external_data.py for download instructions):
+  data/external/barttorvik_{season}.csv – T-Rank adjusted efficiency (free)
+  data/external/net_rankings_{season}.csv – NCAA NET rankings (free)
+  data/external/kenpom_{season}.csv – KenPom ratings (subscription ~$20/yr)
 """
 
 import os
@@ -9,6 +26,10 @@ import numpy as np
 
 SAMPLE_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "sample")
 KAGGLE_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
+EXTERNAL_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "external")
+
+# Default value used when a team has no tournament history (midpoint of seeds 1-16)
+_DEFAULT_AVG_SEED = 8.5
 
 
 def _load(filename, data_dir=None, fallbacks=None):
@@ -53,6 +74,14 @@ def _load(filename, data_dir=None, fallbacks=None):
     )
 
 
+def _load_or_empty(filename, data_dir, fallbacks, columns):
+    """Load a CSV or return an empty DataFrame with given columns on failure."""
+    try:
+        return _load(filename, data_dir, fallbacks)
+    except FileNotFoundError:
+        return pd.DataFrame(columns=columns)
+
+
 def load_teams(gender="M", data_dir=None):
     return _load(f"{gender}Teams.csv", data_dir)
 
@@ -91,6 +120,62 @@ def load_rankings(gender="M", data_dir=None):
         )
     except FileNotFoundError:
         return empty
+
+
+def load_coaches(gender="M", data_dir=None):
+    """Load head-coach roster from MTeamCoaches.csv (men only in Kaggle data).
+
+    Columns: Season, TeamID, FirstDayNum, LastDayNum, CoachName.
+    Returns an empty DataFrame when the file is not available.
+    """
+    return _load_or_empty(
+        "MTeamCoaches.csv",
+        data_dir,
+        fallbacks=[f"{gender}TeamCoaches.csv"],
+        columns=["Season", "TeamID", "FirstDayNum", "LastDayNum", "CoachName"],
+    )
+
+
+def load_conference_affiliations(gender="M", data_dir=None):
+    """Load team conference affiliations (MTeamConferences.csv / WTeamConferences.csv).
+
+    Columns: Season, TeamID, ConfAbbrev.
+    Returns an empty DataFrame when the file is not available.
+    """
+    return _load_or_empty(
+        f"{gender}TeamConferences.csv",
+        data_dir,
+        fallbacks=[],
+        columns=["Season", "TeamID", "ConfAbbrev"],
+    )
+
+
+def load_conference_tourney_games(gender="M", data_dir=None):
+    """Load conference tournament game list (MConferenceTourneyGames.csv / W…).
+
+    Columns: ConfAbbrev, Season, DayNum, WTeamID, LTeamID.
+    Returns an empty DataFrame when the file is not available.
+    """
+    return _load_or_empty(
+        f"{gender}ConferenceTourneyGames.csv",
+        data_dir,
+        fallbacks=[],
+        columns=["ConfAbbrev", "Season", "DayNum", "WTeamID", "LTeamID"],
+    )
+
+
+def load_game_cities(gender="M", data_dir=None):
+    """Load per-game city information (MGameCities.csv / WGameCities.csv).
+
+    Columns: Season, DayNum, WTeamID, LTeamID, CRType, CityID.
+    Returns an empty DataFrame when the file is not available.
+    """
+    return _load_or_empty(
+        f"{gender}GameCities.csv",
+        data_dir,
+        fallbacks=[],
+        columns=["Season", "DayNum", "WTeamID", "LTeamID", "CRType", "CityID"],
+    )
 
 
 def load_2026_teams(gender="M", data_dir=None):
@@ -134,6 +219,412 @@ def get_seed_number(seed_str):
     import re
     m = re.search(r"\d+", str(seed_str))
     return int(m.group()) if m else 16
+
+
+# ---------------------------------------------------------------------------
+# New feature computation helpers
+# ---------------------------------------------------------------------------
+
+def compute_strength_of_schedule(regular_df, season_stats_df):
+    """Compute Strength of Schedule (SoS) for each team per season.
+
+    SoS = average win percentage of opponents faced during the regular season.
+    This is a recognised predictor of tournament success: teams from brutal
+    schedules are better prepared than their record alone suggests.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: Season, TeamID, SoS, SoS_Wins (avg opp win pct for wins only).
+    """
+    if regular_df.empty or season_stats_df.empty:
+        return pd.DataFrame(columns=["Season", "TeamID", "SoS", "SoS_Wins"])
+
+    # Build quick lookup: (Season, TeamID) -> WinPct
+    win_pct_map = {
+        (int(r.Season), int(r.TeamID)): float(r.WinPct)
+        for r in season_stats_df[["Season", "TeamID", "WinPct"]].itertuples()
+    }
+
+    rows = []
+    for _, row in regular_df.iterrows():
+        season = int(row["Season"])
+        w_id = int(row["WTeamID"])
+        l_id = int(row["LTeamID"])
+        w_opp_pct = win_pct_map.get((season, l_id), 0.5)
+        l_opp_pct = win_pct_map.get((season, w_id), 0.5)
+        rows.append((season, w_id, w_opp_pct, 1))
+        rows.append((season, l_id, l_opp_pct, 0))
+
+    tmp = pd.DataFrame(rows, columns=["Season", "TeamID", "OppWinPct", "IsWin"])
+    sos_all = tmp.groupby(["Season", "TeamID"])["OppWinPct"].mean().reset_index(name="SoS")
+    sos_wins = (
+        tmp[tmp["IsWin"] == 1]
+        .groupby(["Season", "TeamID"])["OppWinPct"]
+        .mean()
+        .reset_index(name="SoS_Wins")
+    )
+    sos = sos_all.merge(sos_wins, on=["Season", "TeamID"], how="left")
+    sos["SoS_Wins"] = sos["SoS_Wins"].fillna(sos["SoS"])
+    return sos
+
+
+def compute_recent_form(regular_df, last_n_days=28):
+    """Compute recent-form statistics for the tail end of the regular season.
+
+    Only the last ``last_n_days`` DayNums of each season are included.
+    This captures hot/cold streaks entering the tournament.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: Season, TeamID, RecentWinPct, RecentPointDiff, RecentGames.
+    """
+    if regular_df.empty:
+        return pd.DataFrame(
+            columns=["Season", "TeamID", "RecentWinPct", "RecentPointDiff", "RecentGames"]
+        )
+
+    records = []
+    for season, sdf in regular_df.groupby("Season"):
+        max_day = sdf["DayNum"].max()
+        cutoff = max_day - last_n_days
+        recent = sdf[sdf["DayNum"] >= cutoff]
+
+        team_stats: dict = {}
+
+        def _update(tid, scored, allowed, won):
+            if tid not in team_stats:
+                team_stats[tid] = {"wins": 0, "games": 0, "pf": 0, "pa": 0}
+            s = team_stats[tid]
+            s["wins"] += int(won)
+            s["games"] += 1
+            s["pf"] += scored
+            s["pa"] += allowed
+
+        for _, row in recent.iterrows():
+            _update(int(row["WTeamID"]), row["WScore"], row["LScore"], True)
+            _update(int(row["LTeamID"]), row["LScore"], row["WScore"], False)
+
+        for tid, s in team_stats.items():
+            g = max(s["games"], 1)
+            records.append({
+                "Season": season,
+                "TeamID": tid,
+                "RecentWinPct": s["wins"] / g,
+                "RecentPointDiff": (s["pf"] - s["pa"]) / g,
+                "RecentGames": s["games"],
+            })
+
+    return pd.DataFrame(records) if records else pd.DataFrame(
+        columns=["Season", "TeamID", "RecentWinPct", "RecentPointDiff", "RecentGames"]
+    )
+
+
+def compute_tournament_history(tourney_df, seeds_df):
+    """Compute cumulative prior-season tournament statistics per team.
+
+    For each (Season S, TeamID T), we aggregate tournament data from all
+    seasons *before* S so there is zero leakage into the model.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: Season, TeamID, TourneyApps, TourneyWins, TourneyWinRate,
+                 AvgTourneySeed, BestTourneyRound.
+    """
+    if tourney_df.empty or seeds_df.empty:
+        return pd.DataFrame(columns=[
+            "Season", "TeamID", "TourneyApps", "TourneyWins",
+            "TourneyWinRate", "AvgTourneySeed", "BestTourneyRound",
+        ])
+
+    # Wins per (Season, TeamID)
+    wins_per_season = (
+        tourney_df.groupby(["Season", "WTeamID"])
+        .size().reset_index(name="wins")
+        .rename(columns={"WTeamID": "TeamID"})
+    )
+
+    # Seed per (Season, TeamID) – take minimum seed number per appearance
+    seeds_work = seeds_df[["Season", "TeamID", "Seed"]].copy()
+    seeds_work["seed_num"] = seeds_work["Seed"].apply(get_seed_number)
+    appearances = (
+        seeds_work.groupby(["Season", "TeamID"])
+        .agg(seed_num=("seed_num", "min"))
+        .reset_index()
+    )
+    appearances = appearances.merge(wins_per_season, on=["Season", "TeamID"], how="left")
+    appearances["wins"] = appearances["wins"].fillna(0).astype(int)
+
+    # Build lookup: (TeamID, Season) -> {wins, seed_num}
+    lookup: dict = {}
+    for row in appearances.itertuples(index=False):
+        lookup[(row.TeamID, row.Season)] = {"wins": row.wins, "seed": row.seed_num}
+
+    all_teams = sorted(seeds_df["TeamID"].unique())
+    all_seasons = sorted(seeds_df["Season"].unique())
+
+    records = []
+    for tid in all_teams:
+        cum_apps = 0
+        cum_wins = 0
+        seed_list: list = []
+
+        for season in all_seasons:
+            # Record BEFORE updating with this season (no leakage)
+            total_games = cum_wins + cum_apps  # each appearance = 1 loss
+            records.append({
+                "Season": season,
+                "TeamID": tid,
+                "TourneyApps": cum_apps,
+                "TourneyWins": cum_wins,
+                "TourneyWinRate": cum_wins / max(total_games, 1) if total_games > 0 else 0.0,
+                "AvgTourneySeed": float(np.mean(seed_list)) if seed_list else _DEFAULT_AVG_SEED,
+                "BestTourneyRound": cum_wins if cum_apps > 0 else 0,
+            })
+            # Now update with current season
+            if (tid, season) in lookup:
+                d = lookup[(tid, season)]
+                cum_apps += 1
+                cum_wins += d["wins"]
+                seed_list.append(d["seed"])
+
+    return pd.DataFrame(records)
+
+
+def compute_coaching_features(coaches_df, seeds_df):
+    """Compute coaching-experience features per (Season, TeamID).
+
+    For each team, we identify the head coach at the end of the season
+    (last DayNum >= 132) and calculate:
+    - CoachSeasons: number of seasons this coach has been at this school.
+    - CoachTourneyApps: number of prior NCAA tournaments this coach has led
+      *any* team to.
+
+    Returns an empty DataFrame when coaches_df is empty.
+    """
+    if coaches_df.empty:
+        return pd.DataFrame(
+            columns=["Season", "TeamID", "CoachSeasons", "CoachTourneyApps"]
+        )
+
+    # End-of-season coach: latest active coach at DayNum >= 132
+    end = (
+        coaches_df[coaches_df["LastDayNum"] >= 132]
+        .sort_values("FirstDayNum")
+        .groupby(["Season", "TeamID"])
+        .last()
+        .reset_index()
+    )[["Season", "TeamID", "CoachName"]]
+
+    # Build (coach, team) → sorted list of seasons
+    coach_team_seasons: dict = {}
+    for row in end.itertuples(index=False):
+        key = (row.CoachName, row.TeamID)
+        coach_team_seasons.setdefault(key, []).append(row.Season)
+
+    # Tournament appearances per coach (from seeds_df)
+    # (coach, season) → appeared in tourney?
+    tourney_seasons: set = set(zip(seeds_df["Season"], seeds_df["TeamID"]))
+    # Map (season, TeamID) → coach
+    coach_lookup = {(r.Season, r.TeamID): r.CoachName for r in end.itertuples(index=False)}
+
+    records = []
+    for row in end.itertuples(index=False):
+        season = row.Season
+        tid = row.TeamID
+        coach = row.CoachName
+
+        # Seasons this coach has been at this school up to and including now
+        key = (coach, tid)
+        seasons_at_school = sorted(s for s in coach_team_seasons.get(key, []) if s <= season)
+        coach_seasons = len(seasons_at_school)
+
+        # Prior tourney appearances by this coach (any team, any school)
+        prior_apps = sum(
+            1
+            for (s, t), c in coach_lookup.items()
+            if c == coach and s < season and (s, t) in tourney_seasons
+        )
+
+        records.append({
+            "Season": season,
+            "TeamID": tid,
+            "CoachSeasons": coach_seasons,
+            "CoachTourneyApps": prior_apps,
+        })
+
+    return pd.DataFrame(records) if records else pd.DataFrame(
+        columns=["Season", "TeamID", "CoachSeasons", "CoachTourneyApps"]
+    )
+
+
+def compute_conference_features(conf_df, tourney_df, seeds_df):
+    """Compute conference-strength features per (Season, TeamID).
+
+    Conference strength = fraction of that conference's tournament games won
+    in all *prior* seasons.  Teams in elite conferences (e.g. ACC, Big Ten)
+    tend to be battle-hardened entering the tournament.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: Season, TeamID, ConfStrength, ConfTourneyApps.
+    """
+    if conf_df.empty or tourney_df.empty or seeds_df.empty:
+        return pd.DataFrame(
+            columns=["Season", "TeamID", "ConfStrength", "ConfTourneyApps"]
+        )
+
+    # Build (Season, TeamID) -> ConfAbbrev
+    conf_map = {
+        (int(r.Season), int(r.TeamID)): r.ConfAbbrev
+        for r in conf_df.itertuples(index=False)
+    }
+
+    # Tournament wins/losses per (Season, ConfAbbrev)
+    wins_records = []
+    for _, row in tourney_df.iterrows():
+        season = int(row["Season"])
+        w_conf = conf_map.get((season, int(row["WTeamID"])))
+        l_conf = conf_map.get((season, int(row["LTeamID"])))
+        if w_conf:
+            wins_records.append({"Season": season, "ConfAbbrev": w_conf, "Result": 1})
+        if l_conf:
+            wins_records.append({"Season": season, "ConfAbbrev": l_conf, "Result": 0})
+
+    if not wins_records:
+        return pd.DataFrame(
+            columns=["Season", "TeamID", "ConfStrength", "ConfTourneyApps"]
+        )
+
+    conf_games_df = pd.DataFrame(wins_records)
+    conf_agg = (
+        conf_games_df.groupby(["Season", "ConfAbbrev"])
+        .agg(ConfWins=("Result", "sum"), ConfGames=("Result", "count"))
+        .reset_index()
+    )
+
+    # Cumulative prior-season conference strength
+    all_confs = conf_agg["ConfAbbrev"].unique()
+    all_seasons = sorted(conf_agg["Season"].unique())
+    cum_conf: dict = {c: {"wins": 0, "games": 0} for c in all_confs}
+
+    conf_strength_map: dict = {}
+    for season in all_seasons:
+        for conf in all_confs:
+            g = cum_conf[conf]["games"]
+            w = cum_conf[conf]["wins"]
+            conf_strength_map[(season, conf)] = w / g if g > 0 else 0.5
+
+        # Update cumulative with this season
+        season_rows = conf_agg[conf_agg["Season"] == season]
+        for row in season_rows.itertuples(index=False):
+            cum_conf[row.ConfAbbrev]["wins"] += row.ConfWins
+            cum_conf[row.ConfAbbrev]["games"] += row.ConfGames
+
+    # Tournament appearances per conference per prior season
+    seed_conf = seeds_df.copy()
+    seed_conf["ConfAbbrev"] = seed_conf.apply(
+        lambda r: conf_map.get((int(r["Season"]), int(r["TeamID"]))), axis=1
+    )
+    conf_apps = (
+        seed_conf.groupby(["Season", "ConfAbbrev"])
+        .size().reset_index(name="Apps")
+    )
+    # cumulative apps per conf
+    cum_apps: dict = {c: 0 for c in all_confs}
+    conf_apps_map: dict = {}
+    for season in all_seasons:
+        for conf in all_confs:
+            conf_apps_map[(season, conf)] = cum_apps.get(conf, 0)
+        season_rows = conf_apps[conf_apps["Season"] == season]
+        for row in season_rows.itertuples(index=False):
+            if row.ConfAbbrev:
+                cum_apps[row.ConfAbbrev] = cum_apps.get(row.ConfAbbrev, 0) + row.Apps
+
+    # Assign to teams
+    records = []
+    for row in conf_df.itertuples(index=False):
+        season = int(row.Season)
+        tid = int(row.TeamID)
+        conf = row.ConfAbbrev
+        records.append({
+            "Season": season,
+            "TeamID": tid,
+            "ConfStrength": conf_strength_map.get((season, conf), 0.5),
+            "ConfTourneyApps": conf_apps_map.get((season, conf), 0),
+        })
+
+    return pd.DataFrame(records) if records else pd.DataFrame(
+        columns=["Season", "TeamID", "ConfStrength", "ConfTourneyApps"]
+    )
+
+
+def compute_conference_tourney_form(regular_df, conf_tourney_games_df):
+    """Compute per-team performance specifically in conference tournament games.
+
+    Conference tournament results (just before Selection Sunday) are a
+    strong indicator of current team form.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: Season, TeamID, ConfTourneyWinPct, ConfTourneyPointDiff.
+    """
+    if conf_tourney_games_df.empty or regular_df.empty:
+        return pd.DataFrame(
+            columns=["Season", "TeamID", "ConfTourneyWinPct", "ConfTourneyPointDiff"]
+        )
+
+    # The conf tourney games file has WTeamID/LTeamID but no scores.
+    # Scores are in the regular season detailed results (they share the same
+    # Season/DayNum/WTeamID/LTeamID key).
+    score_map = {
+        (int(r.Season), int(r.DayNum), int(r.WTeamID), int(r.LTeamID)):
+            (r.WScore, r.LScore)
+        for r in regular_df.itertuples(index=False)
+        if hasattr(r, "WScore")
+    }
+
+    records_map: dict = {}
+
+    for row in conf_tourney_games_df.itertuples(index=False):
+        season = int(row.Season)
+        day = int(row.DayNum)
+        w_id = int(row.WTeamID)
+        l_id = int(row.LTeamID)
+        scores = score_map.get((season, day, w_id, l_id))
+        w_score = scores[0] if scores else 0
+        l_score = scores[1] if scores else 0
+
+        for tid, scored, allowed, won in [
+            (w_id, w_score, l_score, 1),
+            (l_id, l_score, w_score, 0),
+        ]:
+            key = (season, tid)
+            if key not in records_map:
+                records_map[key] = {"wins": 0, "games": 0, "pf": 0, "pa": 0}
+            s = records_map[key]
+            s["wins"] += won
+            s["games"] += 1
+            s["pf"] += scored
+            s["pa"] += allowed
+
+    rows = []
+    for (season, tid), s in records_map.items():
+        g = max(s["games"], 1)
+        rows.append({
+            "Season": season,
+            "TeamID": tid,
+            "ConfTourneyWinPct": s["wins"] / g,
+            "ConfTourneyPointDiff": (s["pf"] - s["pa"]) / g,
+        })
+
+    return pd.DataFrame(rows) if rows else pd.DataFrame(
+        columns=["Season", "TeamID", "ConfTourneyWinPct", "ConfTourneyPointDiff"]
+    )
 
 
 def preaggregate_rankings(rankings_df, day_limit=133):
@@ -185,7 +676,7 @@ def compute_season_stats(season_df):
     - Basic box-score averages (scoring, shooting, rebounding, etc.)
     - Advanced metrics: Pythagorean expectation, pace, offensive/defensive
       efficiency per 100 possessions, effective FG%, true shooting %, turnover
-      rate, free-throw rate, and rebound rates.
+      rate, free-throw rate, rebound rates, and home/neutral/away splits.
     """
     box_cols = ["FGM", "FGA", "FGM3", "FGA3", "FTM", "FTA",
                 "OR", "DR", "Ast", "TO", "Stl", "Blk", "PF"]
@@ -199,6 +690,9 @@ def compute_season_stats(season_df):
             if tid not in team_stats:
                 team_stats[tid] = {
                     "Wins": 0, "Games": 0,
+                    "HomeWins": 0, "HomeGames": 0,
+                    "AwayWins": 0, "AwayGames": 0,
+                    "NeutralWins": 0, "NeutralGames": 0,
                     "PointsFor": 0, "PointsAgainst": 0,
                     **{f"Sum{c}": 0.0 for c in box_cols},
                     # opponent box-score totals (for pace / efficiency)
@@ -211,6 +705,7 @@ def compute_season_stats(season_df):
             score = row[f"{prefix}Score"]
             opp_score = row[f"{opp_prefix}Score"]
             win = 1 if prefix == "W" else 0
+            loc_col = row.get("WLoc", "N")  # H/A/N from the winner's perspective
             _init(tid)
             s = team_stats[tid]
             s["Wins"] += win
@@ -220,6 +715,29 @@ def compute_season_stats(season_df):
             for c in box_cols:
                 s[f"Sum{c}"] += row.get(f"{prefix}{c}", 0.0)
                 s[f"OppSum{c}"] += row.get(f"{opp_prefix}{c}", 0.0)
+
+            # Track home/away/neutral splits
+            if prefix == "W":
+                # winner's location is WLoc directly
+                loc = loc_col
+            else:
+                # loser's location is opposite
+                if loc_col == "H":
+                    loc = "A"
+                elif loc_col == "A":
+                    loc = "H"
+                else:
+                    loc = "N"
+
+            if loc == "H":
+                s["HomeWins"] += win
+                s["HomeGames"] += 1
+            elif loc == "A":
+                s["AwayWins"] += win
+                s["AwayGames"] += 1
+            else:
+                s["NeutralWins"] += win
+                s["NeutralGames"] += 1
 
         for _, row in sdf.iterrows():
             _accumulate(row, "W")
@@ -272,6 +790,25 @@ def compute_season_stats(season_df):
             # Free-throw rate
             ft_rate = fta / fga
 
+            # --- Dean Oliver's 4th Factor: Rebound Rates ---
+            # Offensive rebound rate: OR / (OR + opp_DR)
+            own_or = s["SumOR"] / g
+            opp_dr = s["OppSumDR"] / g
+            or_rate = own_or / max(own_or + opp_dr, 1.0)
+
+            # Defensive rebound rate: DR / (DR + opp_OR)
+            own_dr = s["SumDR"] / g
+            opp_or = s["OppSumOR"] / g
+            dr_rate = own_dr / max(own_dr + opp_or, 1.0)
+
+            # --- Home / Away / Neutral splits ---
+            hg = max(s["HomeGames"], 1)
+            ag = max(s["AwayGames"], 1)
+            ng = max(s["NeutralGames"], 1)
+            home_win_pct = s["HomeWins"] / hg if s["HomeGames"] > 0 else np.nan
+            away_win_pct = s["AwayWins"] / ag if s["AwayGames"] > 0 else np.nan
+            neutral_win_pct = s["NeutralWins"] / ng if s["NeutralGames"] > 0 else np.nan
+
             record = {
                 "Season": season,
                 "TeamID": tid,
@@ -294,6 +831,13 @@ def compute_season_stats(season_df):
                 "FTRate": ft_rate,
                 # Turnover
                 "TORatePerPoss": to_rate,
+                # Rebound rates (Dean Oliver 4th factor)
+                "ORpct": or_rate,
+                "DRpct": dr_rate,
+                # Location splits
+                "HomeWinPct": home_win_pct,
+                "AwayWinPct": away_win_pct,
+                "NeutralWinPct": neutral_win_pct,
             }
             for c in box_cols:
                 record[f"Avg{c}"] = s[f"Sum{c}"] / g
@@ -308,6 +852,18 @@ def load_all_data(gender="M", data_dir=None):
     Returns a dict with keys:
       teams, regular, tourney, seeds, rankings, season_stats,
       rankings_agg  (pre-aggregated rankings lookup dict for fast access)
+
+    ``season_stats`` is enriched with the following additional columns when
+    the corresponding data files are available:
+      SoS, SoS_Wins       – Strength of Schedule
+      RecentWinPct, RecentPointDiff, RecentGames  – recent form (last 28 days)
+      TourneyApps, TourneyWins, TourneyWinRate,
+        AvgTourneySeed, BestTourneyRound           – tournament history
+      CoachSeasons, CoachTourneyApps               – coaching tenure
+      ConfStrength, ConfTourneyApps                – conference strength
+      ConfTourneyWinPct, ConfTourneyPointDiff       – conf tourney form
+      ORpct, DRpct                                 – rebound rates (4th factor)
+      HomeWinPct, AwayWinPct, NeutralWinPct        – location splits
     """
     teams = load_teams(gender, data_dir)
     regular = load_regular_season(gender, data_dir)
@@ -317,6 +873,43 @@ def load_all_data(gender="M", data_dir=None):
 
     season_stats = compute_season_stats(regular)
     rankings_agg = preaggregate_rankings(rankings)
+
+    # ------------------------------------------------------------------
+    # Enrich season_stats with new features (all merged by Season+TeamID)
+    # ------------------------------------------------------------------
+
+    # 1. Strength of Schedule
+    sos_df = compute_strength_of_schedule(regular, season_stats)
+    if not sos_df.empty:
+        season_stats = season_stats.merge(sos_df, on=["Season", "TeamID"], how="left")
+
+    # 2. Recent form
+    recent_df = compute_recent_form(regular)
+    if not recent_df.empty:
+        season_stats = season_stats.merge(recent_df, on=["Season", "TeamID"], how="left")
+
+    # 3. Tournament history (cumulative, no leakage)
+    th_df = compute_tournament_history(tourney, seeds)
+    if not th_df.empty:
+        season_stats = season_stats.merge(th_df, on=["Season", "TeamID"], how="left")
+
+    # 4. Coaching features (men only; graceful no-op for women)
+    coaches_df = load_coaches(gender, data_dir)
+    coach_feats = compute_coaching_features(coaches_df, seeds)
+    if not coach_feats.empty:
+        season_stats = season_stats.merge(coach_feats, on=["Season", "TeamID"], how="left")
+
+    # 5. Conference strength
+    conf_df = load_conference_affiliations(gender, data_dir)
+    conf_feats = compute_conference_features(conf_df, tourney, seeds)
+    if not conf_feats.empty:
+        season_stats = season_stats.merge(conf_feats, on=["Season", "TeamID"], how="left")
+
+    # 6. Conference tournament form
+    conf_tourney_df = load_conference_tourney_games(gender, data_dir)
+    conf_tourney_form = compute_conference_tourney_form(regular, conf_tourney_df)
+    if not conf_tourney_form.empty:
+        season_stats = season_stats.merge(conf_tourney_form, on=["Season", "TeamID"], how="left")
 
     return {
         "teams": teams,

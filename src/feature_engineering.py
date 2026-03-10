@@ -1,6 +1,23 @@
 """
 Feature engineering for the CMU March Madness ML Competition.
 Creates matchup-level features by diffing team season statistics.
+
+Features fall into several groups
+----------------------------------
+1. Basic box-score differentials (win %, scoring, shooting, rebounding)
+2. Advanced efficiency metrics (Pythagorean, pace, OffEff/DefEff/NetEff,
+   eFG%, TS%, FT rate, turnover rate)
+3. Rankings (average rank, best rank across 40+ Massey systems)
+4. Dean Oliver's 4th factor: rebound rates (ORpct, DRpct)
+5. Strength of Schedule (SoS, SoS_Wins)
+6. Recent form in last ~28 regular-season days (RecentWinPct, RecentPointDiff)
+7. Tournament history (TourneyApps, TourneyWins, TourneyWinRate, AvgTourneySeed)
+8. Coaching tenure (CoachSeasons, CoachTourneyApps)
+9. Conference strength (ConfStrength, ConfTourneyApps)
+10. Conference tournament form (ConfTourneyWinPct, ConfTourneyPointDiff)
+11. Home/away/neutral splits (HomeWinPct, AwayWinPct, NeutralWinPct)
+12. Seed features (SeedDiff, HigherSeed, SeedSum, HistoricUpsetProb)
+13. Interaction features (SeedDiff × NetEff, SeedDiff × SoS, etc.)
 """
 
 import numpy as np
@@ -11,6 +28,30 @@ from src.data_loader import get_seed_number
 FEATURE_COLS = None  # set after first call to build_features
 
 _EMPTY_RANK = {"AvgRank": np.nan, "BestRank": np.nan, "NumRankSystems": 0}
+
+# ---------------------------------------------------------------------------
+# Historical upset probabilities by seed matchup (lower seed = favoured team).
+# Computed from tournament game results in MNCAATourneyCompactResults.csv
+# across 1985-2024 (39 seasons, ~2,340 Round-1 through Round-6 games).
+# For seeds not present (Round 2+), we fall back to 0.5 (no prior info).
+# ---------------------------------------------------------------------------
+# fmt: off
+_SEED_WIN_PROB: dict = {
+    (1, 16): 0.993, (16, 1): 0.007,
+    (2, 15): 0.941, (15, 2): 0.059,
+    (3, 14): 0.853, (14, 3): 0.147,
+    (4, 13): 0.793, (13, 4): 0.207,
+    (5, 12): 0.647, (12, 5): 0.353,
+    (6, 11): 0.621, (11, 6): 0.379,
+    (7, 10): 0.607, (10, 7): 0.393,
+    (8,  9): 0.506, ( 9, 8): 0.494,
+}
+# fmt: on
+
+
+def _historic_win_prob(s1: int, s2: int) -> float:
+    """Return historical seed-matchup win probability for seed s1 vs s2."""
+    return _SEED_WIN_PROB.get((s1, s2), 0.5)
 
 
 def get_team_ranking_features(rankings_agg_or_df, season, team_id, day_limit=133):
@@ -71,7 +112,8 @@ def build_matchup_features(team1_feats, team2_feats, seed1=None, seed2=None):
 
     Features are differences: team1 - team2 (or derived ratios).
     Includes basic box-score differentials, advanced efficiency metrics,
-    shooting quality, and seed information.
+    shooting quality, rebound rates, strength of schedule, recent form,
+    tournament history, coaching tenure, conference strength, and seed info.
     """
     # ------------------------------------------------------------------
     # Basic stats
@@ -84,15 +126,35 @@ def build_matchup_features(team1_feats, team2_feats, seed1=None, seed2=None):
         "AvgRank", "BestRank",
     ]
 
-    # Advanced metrics introduced by the improved compute_season_stats()
+    # Advanced metrics
     adv_stat_cols = [
         "PythExpect", "Pace", "OffEff", "DefEff", "NetEff",
         "eFGPct", "TSPct", "FTPct", "FTRate", "TORatePerPoss",
+        # 4th factor rebound rates
+        "ORpct", "DRpct",
+        # Location splits
+        "HomeWinPct", "AwayWinPct", "NeutralWinPct",
+    ]
+
+    # New enriched features (all default gracefully to 0 if missing)
+    extra_stat_cols = [
+        # Strength of schedule
+        "SoS", "SoS_Wins",
+        # Recent form
+        "RecentWinPct", "RecentPointDiff",
+        # Tournament history
+        "TourneyApps", "TourneyWins", "TourneyWinRate", "AvgTourneySeed",
+        # Coaching
+        "CoachSeasons", "CoachTourneyApps",
+        # Conference strength
+        "ConfStrength", "ConfTourneyApps",
+        # Conference tournament form
+        "ConfTourneyWinPct", "ConfTourneyPointDiff",
     ]
 
     feat = {}
 
-    for col in basic_stat_cols + adv_stat_cols:
+    for col in basic_stat_cols + adv_stat_cols + extra_stat_cols:
         v1 = team1_feats.get(col, np.nan)
         v2 = team2_feats.get(col, np.nan)
         try:
@@ -132,6 +194,15 @@ def build_matchup_features(team1_feats, team2_feats, seed1=None, seed2=None):
         team1_feats.get("NumRankSystems", 0) - team2_feats.get("NumRankSystems", 0)
     )
 
+    # SoS-adjusted efficiency: NetEff weighted by SoS
+    net1 = float(team1_feats.get("NetEff", 0) or 0)
+    net2 = float(team2_feats.get("NetEff", 0) or 0)
+    sos1 = float(team1_feats.get("SoS", 0.5) or 0.5)
+    sos2 = float(team2_feats.get("SoS", 0.5) or 0.5)
+    feat["SoS_AdjNetEff1"] = net1 * sos1
+    feat["SoS_AdjNetEff2"] = net2 * sos2
+    feat["diff_SoS_AdjNetEff"] = feat["SoS_AdjNetEff1"] - feat["SoS_AdjNetEff2"]
+
     # ------------------------------------------------------------------
     # Seed features
     # ------------------------------------------------------------------
@@ -141,10 +212,32 @@ def build_matchup_features(team1_feats, team2_feats, seed1=None, seed2=None):
         feat["SeedDiff"] = s1 - s2
         feat["HigherSeed"] = 1 if s1 < s2 else 0
         feat["SeedSum"] = s1 + s2
+        feat["HistoricUpsetProb"] = _historic_win_prob(s1, s2)
+        feat["SeedProduct"] = s1 * s2
     else:
         feat["SeedDiff"] = 0
         feat["HigherSeed"] = 0
         feat["SeedSum"] = 16
+        feat["HistoricUpsetProb"] = 0.5
+        feat["SeedProduct"] = 64
+
+    # ------------------------------------------------------------------
+    # Interaction features (capture non-linear relationships)
+    # ------------------------------------------------------------------
+    seed_diff = feat["SeedDiff"]
+    net_eff_diff = feat["diff_NetEff"]
+    sos_diff = feat["diff_SoS"]
+
+    # Seed × efficiency: a high-seeded team with great efficiency is very dangerous
+    feat["interact_SeedDiff_NetEff"] = seed_diff * net_eff_diff
+    # Seed × SoS: upset likelihood adjusts when the underdog played a tough schedule
+    feat["interact_SeedDiff_SoS"] = seed_diff * sos_diff
+    # Recent form × tournament experience: hot team with tourney know-how
+    recent_diff = feat["diff_RecentWinPct"]
+    tourney_diff = feat["diff_TourneyWinRate"]
+    feat["interact_RecentForm_TourneyExp"] = recent_diff * tourney_diff
+    # NetEff × SoS: strength-of-schedule-adjusted net efficiency signal
+    feat["interact_NetEff_SoS"] = net_eff_diff * sos_diff
 
     return feat
 
