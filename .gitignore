@@ -25,6 +25,9 @@ env/
 data/raw/
 data/kaggle/
 
+# Large Kaggle zip (re-download from competition page)
+march-machine-learning-mania-2026.zip
+
 # Models (tracked via git for reproducibility, but can be excluded if large)
 # models/*.pkl
 
