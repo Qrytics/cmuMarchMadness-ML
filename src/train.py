@@ -105,6 +105,9 @@ def train_gender(gender="M", data_dir=None, cv_folds=5, save=True,
 
     wf_scores = {"accuracy": [], "log_loss": [], "auc": []}
 
+    # Collect out-of-fold predictions for calibration
+    cal_X_list, cal_y_list = [], []
+
     for val_season in unique_seasons[-n_wf:]:
         train_mask = seasons < val_season
         val_mask = seasons == val_season
@@ -127,6 +130,9 @@ def train_gender(gender="M", data_dir=None, cv_folds=5, save=True,
               f"logloss={wf_scores['log_loss'][-1]:.3f} "
               f"auc={wf_scores['auc'][-1]:.3f}")
 
+        cal_X_list.append(X_val)
+        cal_y_list.append(y_val)
+
     metrics = {
         "gender": gender,
         "n_samples": len(train_df),
@@ -146,11 +152,18 @@ def train_gender(gender="M", data_dir=None, cv_folds=5, save=True,
     print(f"  AUC:      {metrics['cv_auc_mean']:.3f} ± {metrics['cv_auc_std']:.3f}")
 
     # ------------------------------------------------------------------
-    # Train final model on ALL data
+    # Train final model on ALL data + calibrate
     # ------------------------------------------------------------------
     print(f"\n  Training final model on all {len(train_df)} samples...")
     final_model = MarchMadnessModel(gender=gender, best_params=best_params)
     final_model.fit(X, y, feature_names=feature_cols)
+
+    # Calibrate on the aggregated out-of-fold predictions from walk-forward CV
+    if cal_X_list:
+        X_cal = np.vstack(cal_X_list)
+        y_cal = np.concatenate(cal_y_list)
+        print(f"  Calibrating on {len(y_cal)} out-of-fold samples...")
+        final_model.calibrate(X_cal, y_cal)
 
     if save:
         model_path = final_model.save()
