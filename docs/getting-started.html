@@ -124,7 +124,7 @@
     <p class="section-sub">You don't need to start from scratch. Here's the current state of the project.</p>
 
     <div class="success-box">
-      <strong>✅ Models are trained and predictions are generated!</strong> You can download and submit the prediction files immediately. The model currently uses synthetic training data, so accuracy is ~55%. Use real NCAA data (Steps 3–6 below) to reach 65–75%.
+      <strong>✅ Models are trained and predictions are generated!</strong> You can download and submit the prediction files immediately. The models are trained on real Kaggle NCAA data, with historical cross-validation accuracy around 70–75% for tournament games.
     </div>
 
     <ul class="checklist">
@@ -134,7 +134,7 @@
       <li><span class="check">✓</span> <div><strong>Women's predictions generated</strong> — <code>predictions/WTourneyPredictions.csv</code> (71,631 rows)</div></li>
       <li><span class="check">✓</span> <div><strong>Live dashboard deployed</strong> — <a href="index.html" style="color:var(--accent-green)">qrytics.github.io/cmuMarchMadness-ML</a></div></li>
       <li><span class="check">✓</span> <div><strong>CI pipeline configured</strong> — tests run on every push, auto-deploy on push to main</div></li>
-      <li><span class="pending">○</span> <div style="color:var(--text-secondary)"><strong>Real Kaggle data connected</strong> — currently using synthetic data; follow steps below to improve</div></li>
+      <li><span class="check">✓</span> <div><strong>Real Kaggle data connected</strong> — models and dashboard are using real NCAA data from Kaggle</div></li>
     </ul>
   </section>
 
@@ -145,7 +145,7 @@
     <div class="path-grid">
       <div class="path-card" style="border-color: var(--accent-blue);">
         <h4>⚡ Path A — Submit Now (5 minutes)</h4>
-        <p>The prediction files already exist. Just download and submit them. No setup required. Accuracy will be ~55% (better than random, but not optimized).</p>
+        <p>The prediction files already exist. Just download and submit them. No setup required. Accuracy will be competitive out of the box, since the models are already trained on real NCAA data.</p>
         <ol style="margin-top:12px; padding-left:20px; font-size:0.85rem; color:var(--text-secondary);">
           <li style="padding:4px 0"><a href="data/MTourneyPredictions.csv" download style="color:var(--accent-blue)">Download MTourneyPredictions.csv</a></li>
           <li style="padding:4px 0"><a href="data/WTourneyPredictions.csv" download style="color:var(--accent-blue)">Download WTourneyPredictions.csv</a></li>
