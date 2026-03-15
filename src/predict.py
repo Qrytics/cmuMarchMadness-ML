@@ -115,8 +115,8 @@ def generate_predictions(gender="M", data_dir=None, save=True):
     print(f"  Generated {len(bracket_df):,} predictions.")
 
     if save:
-        # Bracket-style CSV
-        bracket_filename = f"{gender}TourneyPredictions.csv"
+        # Bracket-style CSV (required filename for CMU MMML competition)
+        bracket_filename = f"{gender}NCAATourneyPredictions.csv"
         bracket_path = os.path.join(PRED_DIR, bracket_filename)
         bracket_df.to_csv(bracket_path, index=False)
         print(f"  Bracket predictions saved to {bracket_path}")

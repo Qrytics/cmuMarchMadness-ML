@@ -77,12 +77,12 @@ jobs:
         run: |
           python -c "
           import pandas as pd
-          m = pd.read_csv('predictions/MTourneyPredictions.csv')
-          w = pd.read_csv('predictions/WTourneyPredictions.csv')
+          m = pd.read_csv('predictions/MNCAATourneyPredictions.csv')
+          w = pd.read_csv('predictions/WNCAATourneyPredictions.csv')
           assert len(m) == 72390, f'M: expected 72390, got {len(m)}'
           assert len(w) == 71631, f'W: expected 71631, got {len(w)}'
-          print(f'✓ MTourneyPredictions.csv: {len(m):,} rows')
-          print(f'✓ WTourneyPredictions.csv: {len(w):,} rows')
+          print(f'✓ MNCAATourneyPredictions.csv: {len(m):,} rows')
+          print(f'✓ WNCAATourneyPredictions.csv: {len(w):,} rows')
           "
 
       - name: Export site data

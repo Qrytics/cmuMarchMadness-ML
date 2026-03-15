@@ -88,6 +88,7 @@
       <li><a href="bracket.html">Bracket</a></li>
       <li><a href="model.html">Model Details</a></li>
       <li><a href="getting-started.html">Getting Started</a></li>
+      <li><a href="submit.html">Submit</a></li>
     </ul>
   </div>
 </nav>
@@ -120,7 +121,7 @@
 
   <!-- Status Banner -->
   <div class="status-banner">
-    <strong>✅ Using real Kaggle NCAA data.</strong> Predictions are valid in format (72,390 + 71,631 rows) and trained on 15+ seasons of historical data. See <a href="getting-started.html" style="color:var(--cmu-gold)">Getting Started</a> for how the pipeline works.
+    <strong>✅ Using real Kaggle NCAA data.</strong> Predictions are valid in format (72,010 men's + 71,253 women's rows) and trained on 15+ seasons of historical data. See <a href="getting-started.html" style="color:var(--cmu-gold)">Getting Started</a> for how the pipeline works.
   </div>
 
   <!-- Quick Actions -->
@@ -152,16 +153,22 @@
         <div class="action-desc">Source code, model files, and the Actions CI/CD workflows.</div>
         <span class="action-tag tag-gold">GitHub</span>
       </a>
-      <a class="action-card" href="data/MTourneyPredictions.csv" download>
+      <a class="action-card" href="submit.html">
+        <div class="action-icon">📋</div>
+        <div class="action-title">Submit Predictions</div>
+        <div class="action-desc">Competition submission helper — tracks, tie-breakers, file downloads, and progressive bracket updates.</div>
+        <span class="action-tag tag-red">Submit</span>
+      </a>
+      <a class="action-card" href="data/MNCAATourneyPredictions.csv" download>
         <div class="action-icon">📥</div>
         <div class="action-title">Download Men's Predictions</div>
-        <div class="action-desc">MTourneyPredictions.csv — 72,390 rows (all C(381,2) matchup pairs).</div>
+        <div class="action-desc">MNCAATourneyPredictions.csv — 72,010 rows (all Division I men's team pairs).</div>
         <span class="action-tag tag-red">Submit this</span>
       </a>
-      <a class="action-card" href="data/WTourneyPredictions.csv" download>
+      <a class="action-card" href="data/WNCAATourneyPredictions.csv" download>
         <div class="action-icon">📥</div>
         <div class="action-title">Download Women's Predictions</div>
-        <div class="action-desc">WTourneyPredictions.csv — 71,631 rows (all C(379,2) matchup pairs).</div>
+        <div class="action-desc">WNCAATourneyPredictions.csv — 71,253 rows (all Division I women's team pairs).</div>
         <span class="action-tag tag-red">Submit this</span>
       </a>
     </div>
@@ -360,8 +367,8 @@ python -m src.evaluate --data-dir data/raw
 python scripts/export_site_data.py
 
 # Submission files:
-#   predictions/MTourneyPredictions.csv  (72,390 rows) ← submit this
-#   predictions/WTourneyPredictions.csv  (71,631 rows) ← and this</code></pre>
+#   predictions/MNCAATourneyPredictions.csv  (72,010 rows) ← submit this
+#   predictions/WNCAATourneyPredictions.csv  (71,253 rows) ← and this</code></pre>
     </div>
 
     <div style="text-align:center; margin-top: 20px;">

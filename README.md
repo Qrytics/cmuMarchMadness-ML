@@ -45,8 +45,8 @@ This project implements an ensemble ML model that predicts the winner of **any m
 |-----------|--------|
 | Men's model | ✅ Trained (see `models/`) |
 | Women's model | ✅ Trained (see `models/`) |
-| Men's predictions | ✅ Generated — `predictions/MTourneyPredictions.csv` (72,390 rows) |
-| Women's predictions | ✅ Generated — `predictions/WTourneyPredictions.csv` (71,631 rows) |
+| Men's predictions | ✅ Generated — `predictions/MNCAATourneyPredictions.csv` (72,010 rows) |
+| Women's predictions | ✅ Generated — `predictions/WNCAATourneyPredictions.csv` (71,253 rows) |
 | Live dashboard | ✅ Running at [qrytics.github.io/cmuMarchMadness-ML](https://qrytics.github.io/cmuMarchMadness-ML/) |
 
 **⚠️ Current Limitation:** The model was trained on **synthetic data** (not real NCAA statistics). This means predictions are valid in format but not optimized for accuracy. See [Using Real Kaggle Data](#-using-real-kaggle-data) to dramatically improve prediction quality.
@@ -59,10 +59,10 @@ This project implements an ensemble ML model that predicts the winner of **any m
 
 The prediction files are already committed and valid for submission:
 
-1. Find `predictions/MTourneyPredictions.csv` and `predictions/WTourneyPredictions.csv`
+1. Find `predictions/MNCAATourneyPredictions.csv` and `predictions/WNCAATourneyPredictions.csv`
 2. Submit to your team captain before March 17, 2026
 
-The CI pipeline has already validated the format (72,390 M rows, 71,631 W rows with correct team ID ranges).
+The CI pipeline has already validated the format (72,010 M rows, 71,253 W rows with correct team ID ranges).
 
 ### Option B — Improve the model with real data (recommended for better scores)
 
@@ -173,8 +173,8 @@ This generates plots in `docs/assets/` and bracket score data in `models/`.
 python -m src.predict --data-dir data/raw
 
 # Output files:
-#   predictions/MTourneyPredictions.csv  (72,390 rows)
-#   predictions/WTourneyPredictions.csv  (71,631 rows)
+#   predictions/MNCAATourneyPredictions.csv  (72,010 rows)
+#   predictions/WNCAATourneyPredictions.csv  (71,253 rows)
 ```
 
 ### Step 7 — Update the live dashboard
@@ -189,8 +189,8 @@ GitHub Actions deploys the updated dashboard automatically within ~1 minute.
 ### Step 8 — Submit predictions
 
 Submit both files to your team captain before **March 17, 2026 at Noon EDT**:
-- `predictions/MTourneyPredictions.csv`
-- `predictions/WTourneyPredictions.csv`
+- `predictions/MNCAATourneyPredictions.csv`
+- `predictions/WNCAATourneyPredictions.csv`
 
 ---
 
@@ -277,8 +277,8 @@ cmuMarchMadness-ML/
 │   └── assets/                       # CSS, evaluation plots
 ├── models/                           # Trained model .pkl files + metric JSONs
 ├── predictions/                      # Competition submission files
-│   ├── MTourneyPredictions.csv       # 72,390 men's matchup predictions ← SUBMIT THIS
-│   └── WTourneyPredictions.csv       # 71,631 women's matchup predictions ← AND THIS
+│   ├── MNCAATourneyPredictions.csv       # 72,010 men's matchup predictions ← SUBMIT THIS
+│   └── WNCAATourneyPredictions.csv       # 71,253 women's matchup predictions ← AND THIS
 ├── scripts/
 │   ├── generate_sample_data.py       # Generate synthetic training data
 │   ├── download_data.py              # Download real data from Kaggle
@@ -359,7 +359,7 @@ Tests cover:
 - Feature engineering correctness
 - Model training and inference
 - Bracket simulation and scoring
-- Prediction file format (72,390 M rows / 71,631 W rows with correct columns)
+- Prediction file format (72,010 M rows / 71,253 W rows with correct columns)
 
 ---
 
@@ -380,8 +380,8 @@ WTeamID,LTeamID
 
 | File | Rows | Team ID range |
 |------|------|---------------|
-| `MTourneyPredictions.csv` | 72,390 — all C(381,2) pairs | 1000–1999 |
-| `WTourneyPredictions.csv` | 71,631 — all C(379,2) pairs | 3000–3999 |
+| `MNCAATourneyPredictions.csv` | 72,010 — all C(381,2) pairs | 1000–1999 |
+| `WNCAATourneyPredictions.csv` | 71,253 — all C(379,2) pairs | 3000–3999 |
 
 ---
 
