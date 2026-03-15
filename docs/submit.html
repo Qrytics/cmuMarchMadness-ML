@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit Predictions — CMU March Madness ML</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    /* Form styling */
+    .form-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 24px; }
+    .form-section h3 { color: white; font-size: 1.1rem; margin-bottom: 6px; }
+    .form-section .form-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px; }
+
+    label { display: block; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+    input[type="text"], input[type="number"], select {
+      width: 100%; background: var(--bg-card2); border: 1px solid var(--border);
+      color: var(--text-primary); padding: 10px 14px; border-radius: 8px;
+      font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      border-color: var(--cmu-red);
+    }
+    .form-row { margin-bottom: 18px; }
+
+    /* Checkboxes */
+    .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+    .checkbox-item { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+    .checkbox-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--cmu-red); flex-shrink: 0; }
+    .checkbox-item .check-label { font-size: 0.9rem; color: var(--text-primary); }
+    .checkbox-item .check-sub { font-size: 0.78rem; color: var(--text-secondary); display: block; margin-top: 2px; }
+
+    /* Download cards */
+    .download-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+    .download-card {
+      background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 20px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .download-card.men { border-left: 4px solid var(--accent-blue); }
+    .download-card.women { border-left: 4px solid #ff79c6; }
+    .download-card h4 { color: white; font-size: 1rem; }
+    .download-card .file-info { background: rgba(0,0,0,0.3); border-radius: 6px; padding: 10px 14px; font-size: 0.82rem; font-family: monospace; }
+    .download-card .file-info span { color: var(--accent-green); display: block; margin-bottom: 4px; font-size: 0.9rem; font-weight: 700; }
+    .download-card .file-info small { color: var(--text-secondary); }
+
+    /* Tiebreaker */
+    .tiebreaker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .tiebreaker-grid { grid-template-columns: 1fr; } }
+    .tb-card { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+    .tb-card h4 { color: white; margin-bottom: 12px; font-size: 0.95rem; }
+    .tb-score-display { font-size: 2.5rem; font-weight: 800; color: var(--cmu-gold); text-align: center; padding: 12px 0; }
+    .tb-score-display small { font-size: 0.75rem; color: var(--text-secondary); display: block; font-weight: 400; }
+
+    /* Progressive bracket */
+    .round-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .round-card { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .round-card h5 { color: var(--cmu-gold); font-size: 0.82rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+    .round-status { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .round-status:last-child { border-bottom: none; }
+    .round-status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+    .round-status.complete .dot { background: var(--accent-green); }
+    .round-status.active .dot { background: var(--cmu-gold); animation: pulse 1.5s infinite; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* Result entry */
+    .result-entry { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 12px; }
+    .result-entry h5 { color: white; margin-bottom: 12px; font-size: 0.95rem; }
+    .matchup-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+    .matchup-row label { margin: 0; min-width: 100px; }
+    .matchup-row input { max-width: 160px; }
+    .winner-tag { background: rgba(0,212,170,0.15); color: var(--accent-green); border: 1px solid rgba(0,212,170,0.3); border-radius: 12px; padding: 2px 10px; font-size: 0.75rem; font-weight: 600; }
+
+    /* Checklist tracker */
+    .checklist-tracker { display: flex; flex-direction: column; gap: 8px; }
+    .tracker-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-card2); border-radius: 8px; border: 1px solid var(--border); }
+    .tracker-item .t-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+    .tracker-item .t-text { flex: 1; font-size: 0.88rem; color: var(--text-primary); }
+    .tracker-item .t-status { font-size: 0.78rem; padding: 2px 10px; border-radius: 12px; font-weight: 600; }
+    .t-status.done { background: rgba(0,212,170,0.15); color: var(--accent-green); border: 1px solid rgba(0,212,170,0.3); }
+    .t-status.pending { background: rgba(245,197,24,0.15); color: var(--cmu-gold); border: 1px solid rgba(245,197,24,0.3); }
+    .t-status.skip { background: rgba(160,160,176,0.15); color: var(--text-secondary); border: 1px solid var(--border); }
+
+    /* Summary box */
+    .summary-box { background: linear-gradient(135deg, rgba(196,18,48,0.1), rgba(245,197,24,0.05)); border: 1px solid rgba(196,18,48,0.3); border-radius: 12px; padding: 22px; }
+    .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .s-label { color: var(--text-secondary); }
+    .summary-row .s-value { color: white; font-weight: 600; }
+    .summary-row .s-value.empty { color: var(--text-secondary); font-style: italic; font-weight: 400; }
+
+    /* Saved badge */
+    .saved-badge { display: none; background: rgba(0,212,170,0.15); color: var(--accent-green); border: 1px solid rgba(0,212,170,0.3); border-radius: 12px; padding: 3px 12px; font-size: 0.75rem; font-weight: 600; margin-left: 10px; vertical-align: middle; }
+    .saved-badge.show { display: inline-block; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="logo">🏀 <span>CMU March Madness ML</span></a>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="bracket.html">Bracket</a></li>
+      <li><a href="model.html">Model Details</a></li>
+      <li><a href="getting-started.html">Getting Started</a></li>
+      <li><a href="submit.html" class="active">Submit</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="hero" style="padding: 50px 20px;">
+  <h1 style="font-size: 2.2rem;">📋 Competition Submission</h1>
+  <p>Fill in all the required fields, download the prediction files, and track your submission to the CMU MMML competition.</p>
+</div>
+
+<div class="container">
+
+  <!-- Submission Summary -->
+  <section class="section" style="padding: 30px 0 10px;">
+    <h2 class="section-title">Submission <span>Summary</span></h2>
+    <div class="summary-box" id="summaryBox">
+      <div class="summary-row"><span class="s-label">Leaderboard Name</span><span class="s-value empty" id="sumName">Not set</span></div>
+      <div class="summary-row"><span class="s-label">Tracks Selected</span><span class="s-value empty" id="sumTracks">None selected</span></div>
+      <div class="summary-row"><span class="s-label">Men's Prediction File</span><span class="s-value">MNCAATourneyPredictions.csv</span></div>
+      <div class="summary-row"><span class="s-label">Women's Prediction File</span><span class="s-value">WNCAATourneyPredictions.csv</span></div>
+      <div class="summary-row"><span class="s-label">Men's Tie-Breaker (combined championship score)</span><span class="s-value" id="sumMTB">—</span></div>
+      <div class="summary-row"><span class="s-label">Women's Tie-Breaker (combined championship score)</span><span class="s-value" id="sumWTB">—</span></div>
+      <div class="summary-row"><span class="s-label">Progressive Bracket</span><span class="s-value" id="sumProgressive">Not started</span></div>
+    </div>
+  </section>
+
+  <!-- Step 1: Leaderboard Name -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 1 — Leaderboard <span>Name</span></h2>
+    <div class="form-section">
+      <h3>What name should appear on the leaderboard?</h3>
+      <p class="form-desc">Use your Andrew ID, your name, teammate names (for team submissions), or any identifier. This is how you'll appear in the competition rankings.</p>
+      <div class="form-row">
+        <label for="leaderboardName">Leaderboard Name</label>
+        <input type="text" id="leaderboardName" placeholder="e.g. andrewID, Your Name, Team Alpha" oninput="saveField('name', this.value); updateSummary()">
+        <span class="saved-badge" id="nameSaved">Saved ✓</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 2: Track Selection -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 2 — Track <span>Selection</span></h2>
+    <div class="form-section">
+      <h3>Which track(s) are you participating in?</h3>
+      <p class="form-desc">Select all tracks you want to enter. Regular brackets lock in all picks before the tournament. Progressive brackets allow you to update picks after each round as results come in.</p>
+      <div class="checkbox-group">
+        <label class="checkbox-item">
+          <input type="checkbox" id="track-m-regular" onchange="updateTracks(); updateSummary()">
+          <div>
+            <span class="check-label">🏀 Men's Regular Bracket</span>
+            <span class="check-sub">All predictions locked before tournament starts. Requires MNCAATourneyPredictions.csv.</span>
+          </div>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="track-w-regular" onchange="updateTracks(); updateSummary()">
+          <div>
+            <span class="check-label">🏀 Women's Regular Bracket</span>
+            <span class="check-sub">All predictions locked before tournament starts. Requires WNCAATourneyPredictions.csv.</span>
+          </div>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="track-m-progressive" onchange="updateTracks(); updateSummary()">
+          <div>
+            <span class="check-label">⚡ Men's Progressive Bracket</span>
+            <span class="check-sub">Update predictions after each round using actual results. Allows the model to adapt to upsets.</span>
+          </div>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="track-w-progressive" onchange="updateTracks(); updateSummary()">
+          <div>
+            <span class="check-label">⚡ Women's Progressive Bracket</span>
+            <span class="check-sub">Update predictions after each round using actual results. Allows the model to adapt to upsets.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 3: Download Prediction Files -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 3 — Download Prediction <span>Files</span></h2>
+    <p class="section-sub">These are the files you submit to the competition. Each file contains predictions for all possible matchups between Division I teams.</p>
+
+    <div class="download-grid">
+      <div class="download-card men">
+        <h4>🏀 Men's Tournament</h4>
+        <div class="file-info">
+          <span>MNCAATourneyPredictions.csv</span>
+          <small>72,010 predictions · All Division I men's team pairs<br>Columns: <code>WTeamID, LTeamID</code></small>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text-secondary);">Each row predicts one matchup. <code>WTeamID</code> = predicted winner, <code>LTeamID</code> = predicted loser.</div>
+        <a href="data/MNCAATourneyPredictions.csv" download class="btn btn-primary" style="text-align:center;">📥 Download MNCAATourneyPredictions.csv</a>
+      </div>
+
+      <div class="download-card women">
+        <h4>👩 Women's Tournament</h4>
+        <div class="file-info">
+          <span>WNCAATourneyPredictions.csv</span>
+          <small>71,253 predictions · All Division I women's team pairs<br>Columns: <code>WTeamID, LTeamID</code></small>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text-secondary);">Each row predicts one matchup. <code>WTeamID</code> = predicted winner, <code>LTeamID</code> = predicted loser.</div>
+        <a href="data/WNCAATourneyPredictions.csv" download class="btn btn-outline" style="text-align:center;">📥 Download WNCAATourneyPredictions.csv</a>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>File format:</strong> Each row represents one predicted matchup outcome between any two Division I teams. The files cover every possible pairing — not just actual bracket matchups — so that no matter which teams meet in any round, the submission already contains the predicted result.
+    </div>
+  </section>
+
+  <!-- Step 4: Tie-Breaker Scores -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 4 — Tie-Breaker <span>Scores</span></h2>
+    <p class="section-sub">Predict the combined score for both teams in the championship round. This is used as a tie-breaker if two submissions earn the same bracket score.</p>
+
+    <div class="tiebreaker-grid">
+      <!-- Men's Tie-Breaker -->
+      <div class="tb-card">
+        <h4>🏀 Men's Championship — Combined Score</h4>
+        <div class="tb-score-display" id="mTBDisplay">
+          143
+          <small>Model's suggested score</small>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label for="mTieBreaker">Your prediction (combined points for both teams)</label>
+          <input type="number" id="mTieBreaker" min="100" max="200" placeholder="e.g. 143" value="143"
+                 oninput="saveField('mtb', this.value); document.getElementById('mTBDisplay').innerHTML = this.value + '<small>Your tie-breaker</small>'; updateSummary()">
+        </div>
+        <div style="margin-top:10px; font-size:0.8rem; color:var(--text-secondary);">
+          Historical average: ~143 points combined. Range: 116–176. Higher-scoring matchups tend to involve faster-paced teams.
+        </div>
+      </div>
+
+      <!-- Women's Tie-Breaker -->
+      <div class="tb-card">
+        <h4>👩 Women's Championship — Combined Score</h4>
+        <div class="tb-score-display" id="wTBDisplay">
+          136
+          <small>Model's suggested score</small>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label for="wTieBreaker">Your prediction (combined points for both teams)</label>
+          <input type="number" id="wTieBreaker" min="90" max="190" placeholder="e.g. 136" value="136"
+                 oninput="saveField('wtb', this.value); document.getElementById('wTBDisplay').innerHTML = this.value + '<small>Your tie-breaker</small>'; updateSummary()">
+        </div>
+        <div style="margin-top:10px; font-size:0.8rem; color:var(--text-secondary);">
+          Historical average: ~136 points combined. Range: 104–168. Women's championship games tend to be lower scoring than men's.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 5: Progressive Bracket Live Updates -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 5 — Progressive Bracket <span>Live Updates</span></h2>
+    <p class="section-sub">If you're participating in the progressive bracket tracks, update your predictions after each round as actual results become available. The model regenerates predictions using real winners.</p>
+
+    <div class="info-box" style="margin-bottom:20px">
+      <strong>How progressive brackets work:</strong> After each round ends, enter the actual winners below and run the prediction script with the <code>--progressive-round</code> flag. The model then generates fresh predictions for the next round using the real survivors, avoiding cascading errors from early upsets.
+    </div>
+
+    <!-- Tournament Progress Tracker -->
+    <div class="form-section" style="margin-bottom:16px">
+      <h3>Tournament Progress Tracker</h3>
+      <p class="form-desc">Track which rounds have been completed and when you need to update predictions.</p>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <!-- Men's rounds -->
+        <div>
+          <h5 style="color: var(--accent-blue); margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">🏀 Men's Tournament</h5>
+          <div class="round-grid" style="grid-template-columns: 1fr; gap:6px;">
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">First Four (Play-In)</span>
+              <select id="m-round-0" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Round of 64</span>
+              <select id="m-round-1" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Round of 32</span>
+              <select id="m-round-2" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Sweet 16</span>
+              <select id="m-round-3" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Elite Eight</span>
+              <select id="m-round-4" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Final Four</span>
+              <select id="m-round-5" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Championship</span>
+              <select id="m-round-6" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Women's rounds -->
+        <div>
+          <h5 style="color: #ff79c6; margin-bottom: 10px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">👩 Women's Tournament</h5>
+          <div class="round-grid" style="grid-template-columns: 1fr; gap:6px;">
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">First Four (Play-In)</span>
+              <select id="w-round-0" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Round of 64</span>
+              <select id="w-round-1" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Round of 32</span>
+              <select id="w-round-2" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Sweet 16</span>
+              <select id="w-round-3" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Elite Eight</span>
+              <select id="w-round-4" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Final Four</span>
+              <select id="w-round-5" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+            <div class="round-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.85rem; color:white;">Championship</span>
+              <select id="w-round-6" class="round-select" style="width:auto; padding:4px 8px; font-size:0.8rem;" onchange="updateProgress()">
+                <option value="pending">⏳ Pending</option>
+                <option value="done">✅ Complete</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- How to regenerate predictions -->
+    <div class="form-section">
+      <h3>Regenerating Predictions After Each Round</h3>
+      <p class="form-desc">After entering actual round results, run these commands to regenerate predictions for the next round and re-upload the updated file to the competition form.</p>
+
+      <div class="grid-2" style="gap: 16px;">
+        <div>
+          <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 10px;"><strong style="color:white">Men's Progressive Update:</strong></p>
+          <pre style="background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-size: 0.82rem; overflow-x: auto; white-space: pre-wrap;"><code># After Round of 64 completes:
+python -m src.predict --gender M --progressive-round 1
+
+# After Round of 32:
+python -m src.predict --gender M --progressive-round 2
+
+# After Sweet 16:
+python -m src.predict --gender M --progressive-round 3
+
+# After Elite Eight:
+python -m src.predict --gender M --progressive-round 4
+
+# After Final Four:
+python -m src.predict --gender M --progressive-round 5</code></pre>
+        </div>
+        <div>
+          <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 10px;"><strong style="color:white">Women's Progressive Update:</strong></p>
+          <pre style="background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-size: 0.82rem; overflow-x: auto; white-space: pre-wrap;"><code># After Round of 64 completes:
+python -m src.predict --gender W --progressive-round 1
+
+# After Round of 32:
+python -m src.predict --gender W --progressive-round 2
+
+# After Sweet 16:
+python -m src.predict --gender W --progressive-round 3
+
+# After Elite Eight:
+python -m src.predict --gender W --progressive-round 4
+
+# After Final Four:
+python -m src.predict --gender W --progressive-round 5</code></pre>
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-top:14px">
+        <strong>What happens when you run progressive updates?</strong> The script reads actual round results from <code>data/raw/MNCAATourneyResults.csv</code> (or from the manual overrides below), filters surviving teams, builds fresh features with updated stats, and saves a new <code>MNCAATourneyPredictions.csv</code>. Upload this updated file to the competition form for each progressive round.
+      </div>
+    </div>
+
+    <!-- Manual result entry for progressive rounds -->
+    <div class="form-section">
+      <h3>Manual Round Result Entry <span style="font-size:0.78rem; color:var(--text-secondary); font-weight:400;">(optional, for progressive tracking)</span></h3>
+      <p class="form-desc">Optionally record actual game results here. These are saved locally in your browser. Use them to compare against the model's predictions and track accuracy round-by-round.</p>
+
+      <div class="form-row">
+        <label for="resultGender">Tournament</label>
+        <select id="resultGender" style="max-width:220px;" onchange="updateResultDisplay()">
+          <option value="M">Men's Tournament</option>
+          <option value="W">Women's Tournament</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="resultRound">Round</label>
+        <select id="resultRound" style="max-width:220px;" onchange="updateResultDisplay()">
+          <option value="0">First Four (Play-In)</option>
+          <option value="1">Round of 64</option>
+          <option value="2">Round of 32</option>
+          <option value="3">Sweet 16</option>
+          <option value="4">Elite Eight</option>
+          <option value="5">Final Four</option>
+          <option value="6">Championship</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="resultWinners">Actual Winners <span style="font-weight:400; color:var(--text-secondary)">(enter Team IDs or team names, one per line)</span></label>
+        <textarea id="resultWinners" rows="5"
+          style="width:100%; background:var(--bg-card2); border:1px solid var(--border); color:var(--text-primary); padding:10px 14px; border-radius:8px; font-size:0.9rem; font-family:monospace; resize:vertical; outline:none;"
+          placeholder="e.g.&#10;1234 (Duke)&#10;1256 (Kansas)&#10;1301 (Houston)&#10;...one winner per game" oninput="saveRoundResults()"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveRoundResults(); showSavedConfirmation()">💾 Save Round Results</button>
+      <span id="resultSaved" class="saved-badge">Saved ✓</span>
+    </div>
+  </section>
+
+  <!-- Submission Checklist -->
+  <section class="section" style="padding: 20px 0 40px;">
+    <h2 class="section-title">Submission <span>Checklist</span></h2>
+    <p class="section-sub">Make sure you've completed all required steps before the March 17, 2026 noon EDT deadline.</p>
+
+    <div class="checklist-tracker" id="submissionChecklist">
+      <div class="tracker-item">
+        <span class="t-icon">📝</span>
+        <span class="t-text">Leaderboard name set</span>
+        <span class="t-status pending" id="chk-name">Pending</span>
+      </div>
+      <div class="tracker-item">
+        <span class="t-icon">🏀</span>
+        <span class="t-text">Track(s) selected</span>
+        <span class="t-status pending" id="chk-tracks">Pending</span>
+      </div>
+      <div class="tracker-item">
+        <span class="t-icon">📥</span>
+        <span class="t-text">MNCAATourneyPredictions.csv downloaded</span>
+        <span class="t-status pending" id="chk-mfile">Click download above</span>
+      </div>
+      <div class="tracker-item">
+        <span class="t-icon">📥</span>
+        <span class="t-text">WNCAATourneyPredictions.csv downloaded</span>
+        <span class="t-status pending" id="chk-wfile">Click download above</span>
+      </div>
+      <div class="tracker-item">
+        <span class="t-icon">🎯</span>
+        <span class="t-text">Men's tie-breaker score entered</span>
+        <span class="t-status done" id="chk-mtb">143 (default)</span>
+      </div>
+      <div class="tracker-item">
+        <span class="t-icon">🎯</span>
+        <span class="t-text">Women's tie-breaker score entered</span>
+        <span class="t-status done" id="chk-wtb">136 (default)</span>
+      </div>
+      <div class="tracker-item">
+        <span class="t-icon">📤</span>
+        <span class="t-text">Files submitted to CMU MMML Google Form before March 17 noon EDT</span>
+        <span class="t-status pending" id="chk-submit">Required</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="https://www.cs.cmu.edu/~reids/mmml/" target="_blank" class="btn btn-primary">🏆 Open Competition Page</a>
+      <a href="bracket.html" class="btn btn-outline">🏀 View Bracket Predictions</a>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>CMU March Madness ML Competition 2026 — <a href="https://github.com/Qrytics/cmuMarchMadness-ML">GitHub</a> · <a href="https://www.cs.cmu.edu/~reids/mmml/">CMU MMML</a></p>
+  </div>
+</footer>
+
+<script>
+// ─── Local storage helpers ──────────────────────────────────────────
+const STORE_KEY = 'mmml_submit_state';
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch { return {}; }
+}
+
+function saveField(key, value) {
+  const s = loadState();
+  s[key] = value;
+  localStorage.setItem(STORE_KEY, JSON.stringify(s));
+  // Flash a saved indicator
+  const badge = document.getElementById('nameSaved');
+  if (badge) { badge.classList.add('show'); setTimeout(() => badge.classList.remove('show'), 2000); }
+}
+
+function saveRoundResults() {
+  const gender = document.getElementById('resultGender').value;
+  const round = document.getElementById('resultRound').value;
+  const winners = document.getElementById('resultWinners').value;
+  const s = loadState();
+  if (!s.results) s.results = {};
+  s.results[`${gender}_round${round}`] = winners;
+  localStorage.setItem(STORE_KEY, JSON.stringify(s));
+}
+
+function showSavedConfirmation() {
+  const badge = document.getElementById('resultSaved');
+  badge.classList.add('show');
+  setTimeout(() => badge.classList.remove('show'), 2500);
+}
+
+// ─── Track selection ────────────────────────────────────────────────
+function updateTracks() {
+  const tracks = [];
+  if (document.getElementById('track-m-regular').checked) tracks.push("Men's Regular");
+  if (document.getElementById('track-w-regular').checked) tracks.push("Women's Regular");
+  if (document.getElementById('track-m-progressive').checked) tracks.push("Men's Progressive");
+  if (document.getElementById('track-w-progressive').checked) tracks.push("Women's Progressive");
+  saveField('tracks', tracks);
+}
+
+// ─── Progress tracker ───────────────────────────────────────────────
+function updateProgress() {
+  const genders = ['m', 'w'];
+  const progress = {};
+  genders.forEach(g => {
+    progress[g] = [];
+    for (let r = 0; r <= 6; r++) {
+      const el = document.getElementById(`${g}-round-${r}`);
+      progress[g].push(el ? el.value : 'pending');
+    }
+  });
+  saveField('progress', progress);
+  const doneMRounds = progress.m.filter(v => v === 'done').length;
+  const doneWRounds = progress.w.filter(v => v === 'done').length;
+  const progressText = [];
+  if (doneMRounds > 0) progressText.push(`M: ${doneMRounds} round(s) complete`);
+  if (doneWRounds > 0) progressText.push(`W: ${doneWRounds} round(s) complete`);
+  document.getElementById('sumProgressive').textContent = progressText.length ? progressText.join(', ') : 'Not started';
+}
+
+// ─── Summary update ─────────────────────────────────────────────────
+function updateSummary() {
+  const s = loadState();
+  const nameEl = document.getElementById('sumName');
+  nameEl.textContent = s.name || 'Not set';
+  nameEl.className = s.name ? 's-value' : 's-value empty';
+
+  const tracksEl = document.getElementById('sumTracks');
+  const tracks = s.tracks || [];
+  tracksEl.textContent = tracks.length ? tracks.join(', ') : 'None selected';
+  tracksEl.className = tracks.length ? 's-value' : 's-value empty';
+
+  document.getElementById('sumMTB').textContent = s.mtb || document.getElementById('mTieBreaker').value || '143';
+  document.getElementById('sumWTB').textContent = s.wtb || document.getElementById('wTieBreaker').value || '136';
+
+  // Update checklist
+  const nameOk = !!(s.name && s.name.trim());
+  const tracksOk = tracks.length > 0;
+  const mtbOk = !!(s.mtb || document.getElementById('mTieBreaker').value);
+  const wtbOk = !!(s.wtb || document.getElementById('wTieBreaker').value);
+
+  setChecklistItem('chk-name', nameOk, nameOk ? 'Done ✓' : 'Pending');
+  setChecklistItem('chk-tracks', tracksOk, tracksOk ? 'Done ✓' : 'Pending');
+  setChecklistItem('chk-mtb', mtbOk, `${s.mtb || '143'}`);
+  setChecklistItem('chk-wtb', wtbOk, `${s.wtb || '136'}`);
+}
+
+function setChecklistItem(id, isDone, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = isDone ? 't-status done' : 't-status pending';
+}
+
+// ─── Result display ─────────────────────────────────────────────────
+function updateResultDisplay() {
+  const gender = document.getElementById('resultGender').value;
+  const round = document.getElementById('resultRound').value;
+  const s = loadState();
+  const saved = s.results && s.results[`${gender}_round${round}`];
+  document.getElementById('resultWinners').value = saved || '';
+}
+
+// ─── Download tracking ───────────────────────────────────────────────
+document.querySelectorAll('a[download]').forEach(a => {
+  a.addEventListener('click', () => {
+    const href = a.getAttribute('href') || '';
+    if (href.includes('MNCAATourneyPredictions')) {
+      setChecklistItem('chk-mfile', true, 'Downloaded ✓');
+      saveField('mdownloaded', true);
+    } else if (href.includes('WNCAATourneyPredictions')) {
+      setChecklistItem('chk-wfile', true, 'Downloaded ✓');
+      saveField('wdownloaded', true);
+    }
+  });
+});
+
+// ─── Init: restore saved state ──────────────────────────────────────
+(function init() {
+  const s = loadState();
+
+  if (s.name) document.getElementById('leaderboardName').value = s.name;
+  if (s.tracks) {
+    const tmap = {
+      "Men's Regular": 'track-m-regular',
+      "Women's Regular": 'track-w-regular',
+      "Men's Progressive": 'track-m-progressive',
+      "Women's Progressive": 'track-w-progressive',
+    };
+    (s.tracks || []).forEach(t => {
+      const el = document.getElementById(tmap[t]);
+      if (el) el.checked = true;
+    });
+  }
+  if (s.mtb) {
+    document.getElementById('mTieBreaker').value = s.mtb;
+    document.getElementById('mTBDisplay').innerHTML = s.mtb + '<small>Your tie-breaker</small>';
+  }
+  if (s.wtb) {
+    document.getElementById('wTieBreaker').value = s.wtb;
+    document.getElementById('wTBDisplay').innerHTML = s.wtb + '<small>Your tie-breaker</small>';
+  }
+  if (s.progress) {
+    ['m', 'w'].forEach(g => {
+      (s.progress[g] || []).forEach((val, r) => {
+        const el = document.getElementById(`${g}-round-${r}`);
+        if (el) el.value = val;
+      });
+    });
+  }
+  if (s.mdownloaded) setChecklistItem('chk-mfile', true, 'Downloaded ✓');
+  if (s.wdownloaded) setChecklistItem('chk-wfile', true, 'Downloaded ✓');
+
+  updateSummary();
+  updateProgress();
+})();
+</script>
+</body>
+</html>

@@ -161,7 +161,7 @@ class TestPredictionFormat:
     def test_submission_format(self):
         """Validate the submission CSV format."""
         pred_path = os.path.join(
-            os.path.dirname(__file__), "..", "predictions", "MTourneyPredictions.csv"
+            os.path.dirname(__file__), "..", "predictions", "MNCAATourneyPredictions.csv"
         )
         if not os.path.exists(pred_path):
             pytest.skip("Predictions not generated yet")
@@ -180,7 +180,7 @@ class TestPredictionFormat:
 
     def test_women_submission_format(self):
         pred_path = os.path.join(
-            os.path.dirname(__file__), "..", "predictions", "WTourneyPredictions.csv"
+            os.path.dirname(__file__), "..", "predictions", "WNCAATourneyPredictions.csv"
         )
         if not os.path.exists(pred_path):
             pytest.skip("Predictions not generated yet")

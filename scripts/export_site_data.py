@@ -42,8 +42,8 @@ def main():
     copy_file(os.path.join(MODELS_DIR, "w_feature_importance.csv"), os.path.join(DOCS_DATA_DIR, "w_feature_importance.csv"))
 
     # Predictions (these can be large, but they're what the site offers for download)
-    copy_file(os.path.join(PREDS_DIR, "MTourneyPredictions.csv"), os.path.join(DOCS_DATA_DIR, "MTourneyPredictions.csv"))
-    copy_file(os.path.join(PREDS_DIR, "WTourneyPredictions.csv"), os.path.join(DOCS_DATA_DIR, "WTourneyPredictions.csv"))
+    copy_file(os.path.join(PREDS_DIR, "MNCAATourneyPredictions.csv"), os.path.join(DOCS_DATA_DIR, "MNCAATourneyPredictions.csv"))
+    copy_file(os.path.join(PREDS_DIR, "WNCAATourneyPredictions.csv"), os.path.join(DOCS_DATA_DIR, "WNCAATourneyPredictions.csv"))
 
     # Evaluation plots (already go to docs/assets)
     for img in ["m_evaluation.png", "w_evaluation.png"]:

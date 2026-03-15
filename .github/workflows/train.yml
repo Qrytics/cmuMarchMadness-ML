@@ -77,12 +77,14 @@ jobs:
         run: |
           python -c "
           import pandas as pd
-          m = pd.read_csv('predictions/MTourneyPredictions.csv')
-          w = pd.read_csv('predictions/WTourneyPredictions.csv')
-          assert len(m) == 72390, f'M: expected 72390, got {len(m)}'
-          assert len(w) == 71631, f'W: expected 71631, got {len(w)}'
-          print(f'✓ MTourneyPredictions.csv: {len(m):,} rows')
-          print(f'✓ WTourneyPredictions.csv: {len(w):,} rows')
+          m = pd.read_csv('predictions/MNCAATourneyPredictions.csv')
+          w = pd.read_csv('predictions/WNCAATourneyPredictions.csv')
+          # Real data: 72010 M (380 teams) / 71253 W (378 teams)
+          # Sample data: 72390 M (381 teams) / 71631 W (379 teams)
+          assert len(m) in {72010, 72390}, f'M: unexpected count {len(m)}'
+          assert len(w) in {71253, 71631}, f'W: unexpected count {len(w)}'
+          print(f'✓ MNCAATourneyPredictions.csv: {len(m):,} rows')
+          print(f'✓ WNCAATourneyPredictions.csv: {len(w):,} rows')
           "
 
       - name: Export site data
