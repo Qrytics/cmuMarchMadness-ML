@@ -54,7 +54,9 @@ jobs:
           import pandas as pd
           df = pd.read_csv('predictions/MNCAATourneyPredictions.csv')
           assert list(df.columns) == ['WTeamID', 'LTeamID'], f'Wrong columns: {list(df.columns)}'
-          assert len(df) == 72390, f'Wrong row count: {len(df)} (expected 72390)'
+          # 72010 = real data (380 D1 men's teams), 72390 = sample data (381 teams)
+          valid_counts = {72010, 72390}
+          assert len(df) in valid_counts, f'Wrong row count: {len(df)} (expected one of {valid_counts})'
           print(f'MNCAATourneyPredictions.csv: {len(df):,} rows — OK')
           "
 
