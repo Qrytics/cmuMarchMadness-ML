@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaggle Submission — CMU March Madness ML</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    /* Reuse the same card/section/download styles as submit.html */
+    .form-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 24px; }
+    .form-section h3 { color: white; font-size: 1.1rem; margin-bottom: 6px; }
+    .form-section .form-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px; }
+
+    /* Download cards */
+    .download-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+    .download-card {
+      background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 20px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .download-card.kaggle { border-left: 4px solid var(--cmu-gold); }
+    .download-card h4 { color: white; font-size: 1rem; }
+    .download-card .file-info { background: rgba(0,0,0,0.3); border-radius: 6px; padding: 10px 14px; font-size: 0.82rem; font-family: monospace; }
+    .download-card .file-info span { color: var(--accent-green); display: block; margin-bottom: 4px; font-size: 0.9rem; font-weight: 700; }
+    .download-card .file-info small { color: var(--text-secondary); }
+
+    /* Checklist tracker */
+    .checklist-tracker { display: flex; flex-direction: column; gap: 8px; }
+    .tracker-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-card2); border-radius: 8px; border: 1px solid var(--border); }
+    .tracker-item .t-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+    .tracker-item .t-text { flex: 1; font-size: 0.88rem; color: var(--text-primary); }
+    .tracker-item .t-status { font-size: 0.78rem; padding: 2px 10px; border-radius: 12px; font-weight: 600; }
+    .t-status.done { background: rgba(0,212,170,0.15); color: var(--accent-green); border: 1px solid rgba(0,212,170,0.3); }
+    .t-status.pending { background: rgba(245,197,24,0.15); color: var(--cmu-gold); border: 1px solid rgba(245,197,24,0.3); }
+    .t-status.warn { background: rgba(196,18,48,0.15); color: var(--cmu-red); border: 1px solid rgba(196,18,48,0.3); }
+
+    /* Summary box */
+    .summary-box { background: linear-gradient(135deg, rgba(245,197,24,0.08), rgba(79,172,254,0.05)); border: 1px solid rgba(245,197,24,0.3); border-radius: 12px; padding: 22px; }
+    .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .s-label { color: var(--text-secondary); }
+    .summary-row .s-value { color: white; font-weight: 600; }
+
+    /* Warning banner */
+    .warning-banner {
+      background: rgba(196,18,48,0.1); border: 1px solid rgba(196,18,48,0.4);
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+      display: flex; align-items: flex-start; gap: 12px; font-size: 0.88rem;
+    }
+    .warning-banner .wb-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .warning-banner strong { color: #ff6b6b; display: block; margin-bottom: 4px; }
+    .warning-banner p { color: var(--text-secondary); margin: 0; }
+
+    /* Notice box — mirrors .info-box but in gold */
+    .notice-box {
+      background: rgba(245,197,24,0.07); border: 1px solid rgba(245,197,24,0.3);
+      border-radius: 8px; padding: 14px 18px; font-size: 0.88rem; color: var(--text-secondary);
+      margin: 16px 0;
+    }
+    .notice-box strong { color: var(--cmu-gold); }
+
+    /* Code block */
+    .code-block { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; font-family: monospace; font-size: 0.85rem; color: var(--accent-green); overflow-x: auto; margin: 12px 0; }
+    .code-block .comment { color: var(--text-secondary); }
+
+    /* Step number badge */
+    .step-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--cmu-gold); color: #000; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
+
+    /* Distinction badge at the top of the page */
+    .distinction-badge {
+      display: inline-block; background: rgba(245,197,24,0.15); color: var(--cmu-gold);
+      border: 1px solid rgba(245,197,24,0.4); border-radius: 20px; padding: 4px 16px;
+      font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* Metric pill */
+    .metric-pill { display: inline-block; background: rgba(79,172,254,0.12); color: var(--accent-blue); border: 1px solid rgba(79,172,254,0.3); border-radius: 20px; padding: 3px 12px; font-size: 0.8rem; font-weight: 600; margin: 2px; }
+
+    /* Screenshot mock */
+    .ui-mock { background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 10px; padding: 18px; font-size: 0.83rem; color: var(--text-secondary); margin: 12px 0; }
+    .ui-mock .ui-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .ui-mock .ui-row:last-child { border-bottom: none; }
+    .ui-mock .ui-label { min-width: 180px; color: var(--text-secondary); }
+    .ui-mock .ui-val { color: white; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-container">
+    <a href="index.html" class="logo">🏀 <span>CMU March Madness ML</span></a>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="bracket.html">Bracket</a></li>
+      <li><a href="model.html">Model Details</a></li>
+      <li><a href="getting-started.html">Getting Started</a></li>
+      <li><a href="submit.html">CMU Submit</a></li>
+      <li><a href="kaggle-submit.html" class="active">Kaggle Submit</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="hero" style="padding: 50px 20px;">
+  <div class="distinction-badge">🏆 Kaggle Competition — March Machine Learning Mania 2026</div>
+  <h1 style="font-size: 2.2rem;">📤 Kaggle Submission Guide</h1>
+  <p>Follow these steps to upload your predictions to the Kaggle leaderboard. This is <strong>completely separate</strong> from the CMU MMML competition — different file, different format, different website.</p>
+</div>
+
+<div class="container">
+
+  <!-- Distinction warning -->
+  <section class="section" style="padding: 30px 0 10px;">
+    <div class="warning-banner">
+      <div class="wb-icon">⚠️</div>
+      <div>
+        <strong>This is NOT the CMU submission.</strong>
+        <p>The <a href="submit.html" style="color:var(--accent-blue)">CMU Submit page</a> handles the internal Carnegie Mellon MMML competition using two separate files (<code>MNCAATourneyPredictions.csv</code> and <code>WNCAATourneyPredictions.csv</code>) with a different format (<code>WTeamID, LTeamID</code>).
+        This page covers the public <strong>Kaggle</strong> competition which requires one <strong>combined</strong> file (<code>KaggleSubmission.csv</code>) in <strong>ID, Pred</strong> format submitted directly to <a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026" target="_blank" style="color:var(--cmu-gold)">kaggle.com</a>.</p>
+      </div>
+    </div>
+
+    <!-- Quick reference summary -->
+    <h2 class="section-title">At a <span>Glance</span></h2>
+    <div class="summary-box">
+      <div class="summary-row"><span class="s-label">Competition</span><span class="s-value">March Machine Learning Mania 2026</span></div>
+      <div class="summary-row"><span class="s-label">Platform</span><span class="s-value">kaggle.com (not the CMU site)</span></div>
+      <div class="summary-row"><span class="s-label">File to submit</span><span class="s-value">KaggleSubmission.csv (combined Men's + Women's)</span></div>
+      <div class="summary-row"><span class="s-label">Required rows</span><span class="s-value">132,133 rows + 1 header row</span></div>
+      <div class="summary-row"><span class="s-label">Columns</span><span class="s-value">ID, Pred</span></div>
+      <div class="summary-row"><span class="s-label">Scoring metric</span><span class="s-value">Brier score (mean squared error of probabilities)</span></div>
+      <div class="summary-row"><span class="s-label">Submissions per day</span><span class="s-value">5 maximum — choose which one counts</span></div>
+      <div class="summary-row"><span class="s-label">Score before tournaments</span><span class="s-value">0.0 (correct format confirmed; real scoring starts when games begin)</span></div>
+    </div>
+  </section>
+
+  <!-- Step 1: Understand the file format -->
+  <section class="section" style="padding: 30px 0 0;">
+    <h2 class="section-title">Step 1 — Understand the <span>File Format</span></h2>
+
+    <div class="form-section">
+      <h3>What Kaggle expects</h3>
+      <p class="form-desc">Kaggle requires a single CSV file covering every possible matchup between every Division I men's and women's team — not just teams selected for the NCAA tournament. This lets you submit before Selection Sunday without knowing the bracket.</p>
+
+      <p style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:12px;">The file has exactly two columns:</p>
+
+      <div class="code-block">
+<span class="comment"># Format of KaggleSubmission.csv</span>
+ID,Pred
+2026_1101_1102,0.5
+2026_1101_1103,0.5
+2026_1101_1104,0.5
+...
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px;">
+        <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:16px; border:1px solid var(--border);">
+          <h5 style="color:var(--cmu-gold); margin-bottom:10px; font-size:0.88rem; text-transform:uppercase; letter-spacing:1px;">ID column</h5>
+          <ul style="font-size:0.83rem; color:var(--text-secondary); padding-left:16px; line-height:1.9;">
+            <li>Format: <code style="color:var(--accent-green)">YEAR_TeamID1_TeamID2</code></li>
+            <li>Example: <code style="color:var(--accent-green)">2026_1101_1102</code></li>
+            <li><strong style="color:white;">TeamID1 is always the lower number</strong></li>
+            <li>Men's and women's TeamIDs do not overlap — both are in this one file</li>
+          </ul>
+        </div>
+        <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:16px; border:1px solid var(--border);">
+          <h5 style="color:var(--cmu-gold); margin-bottom:10px; font-size:0.88rem; text-transform:uppercase; letter-spacing:1px;">Pred column</h5>
+          <ul style="font-size:0.83rem; color:var(--text-secondary); padding-left:16px; line-height:1.9;">
+            <li>A probability between 0 and 1</li>
+            <li><strong style="color:white;">Probability that TeamID1 (lower ID) wins</strong></li>
+            <li>Example: <code style="color:var(--accent-green)">0.75</code> = 75% chance team 1101 beats team 1102</li>
+            <li>Scored with Brier score (MSE) — closer to the real result is better</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="notice-box" style="margin-top:16px;">
+        <strong>Why all possible matchups?</strong> Kaggle changed the format so you don't need to wait for Selection Sunday to submit. By predicting every possible pairing, any bracket that forms will already have a prediction in your file. Your 2026 submission will show <strong>0.0 on the leaderboard</strong> until the tournaments begin — that is normal and expected.
+      </div>
+    </div>
+
+    <div class="form-section" style="margin-top:0;">
+      <h3>Scoring — Brier Score</h3>
+      <p class="form-desc">Kaggle evaluates your submission using the <strong>Brier score</strong>, which is equivalent to mean squared error between your predicted probability and the actual binary outcome (1 = lower-ID team won, 0 = higher-ID team won).</p>
+
+      <div class="code-block">
+<span class="comment"># Brier score formula (lower is better, 0.0 is perfect)</span>
+Brier = mean( (Pred - Outcome)² )
+
+<span class="comment"># Example: you predict 0.7 and the lower-ID team wins (Outcome = 1)</span>
+error = (0.7 - 1.0)² = 0.09   <span class="comment"># small error, good prediction</span>
+
+<span class="comment"># Example: you predict 0.7 but the lower-ID team LOSES (Outcome = 0)</span>
+error = (0.7 - 0.0)² = 0.49   <span class="comment"># large error, bad prediction</span>
+
+<span class="comment"># Baseline: always predicting 0.5 gives Brier ≈ 0.25</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 2: Download the file -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 2 — Download the <span>Submission File</span></h2>
+    <p class="section-sub">The combined Men's + Women's submission file is pre-generated by the pipeline. It already contains all 132,133 required matchup predictions in the correct Kaggle format.</p>
+
+    <div class="download-grid">
+      <div class="download-card kaggle">
+        <h4>🏆 Kaggle Submission (Men's + Women's combined)</h4>
+        <div class="file-info">
+          <span>KaggleSubmission.csv</span>
+          <small>
+            132,133 rows · All Division I men's &amp; women's team pairs<br>
+            Columns: <code>ID, Pred</code><br>
+            ID format: <code>2026_TeamID1_TeamID2</code> (lower ID first)<br>
+            Pred: probability lower-ID team wins
+          </small>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text-secondary);">
+          Generated by <code>python -m src.predict --combine</code>. Covers every C(N,2) pairing of men's teams and every C(N,2) pairing of women's teams in a single file.
+        </div>
+        <a href="data/KaggleSubmission.csv" download class="btn btn-primary" style="text-align:center;">📥 Download KaggleSubmission.csv</a>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>Need to regenerate this file?</strong> If you have retrained the model with newer data, regenerate the Kaggle submission by running:<br>
+      <code style="color:var(--accent-green); font-size:0.88rem;">python -m src.predict --data-dir data/raw --combine</code><br>
+      Then run <code style="color:var(--accent-green); font-size:0.88rem;">python scripts/export_site_data.py</code> to update the download link on this page.
+    </div>
+  </section>
+
+  <!-- Step 3: Verify the file -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 3 — Verify the <span>File</span></h2>
+
+    <div class="form-section">
+      <h3>Before uploading, confirm these requirements</h3>
+      <p class="form-desc">Kaggle will reject your submission if these conditions are not met. Check each one before uploading.</p>
+
+      <div class="checklist-tracker">
+        <div class="tracker-item">
+          <div class="t-icon">📄</div>
+          <div class="t-text"><strong>File name ends in .csv</strong> — Kaggle also accepts .zip, .gz, or .7z archives of the CSV, but plain .csv is simplest.</div>
+          <div class="t-status done">Required</div>
+        </div>
+        <div class="tracker-item">
+          <div class="t-icon">📊</div>
+          <div class="t-text"><strong>Exactly 132,133 data rows</strong> (plus one header row) — Kaggle explicitly requires this count. The file has both men's and women's matchups.</div>
+          <div class="t-status done">Required</div>
+        </div>
+        <div class="tracker-item">
+          <div class="t-icon">🔤</div>
+          <div class="t-text"><strong>Header row is exactly <code>ID,Pred</code></strong> — column names are case-sensitive. No extra spaces.</div>
+          <div class="t-status done">Required</div>
+        </div>
+        <div class="tracker-item">
+          <div class="t-icon">🔢</div>
+          <div class="t-text"><strong>ID format: <code>2026_TeamID1_TeamID2</code></strong> with TeamID1 &lt; TeamID2 (lower number always first). Example: <code>2026_1101_1102</code>.</div>
+          <div class="t-status done">Required</div>
+        </div>
+        <div class="tracker-item">
+          <div class="t-icon">📈</div>
+          <div class="t-text"><strong>Pred values are between 0 and 1</strong> — these are probabilities, not scores or rankings. Extreme values like 0.000001 or 0.999999 are allowed.</div>
+          <div class="t-status done">Required</div>
+        </div>
+        <div class="tracker-item">
+          <div class="t-icon">🚫</div>
+          <div class="t-text"><strong>No missing values</strong> — every row must have both an ID and a Pred. No blank cells, no NaN.</div>
+          <div class="t-status done">Required</div>
+        </div>
+      </div>
+
+      <div class="code-block" style="margin-top:18px;">
+<span class="comment"># Quick command-line check (run from repo root):</span>
+python -c "
+import pandas as pd
+df = pd.read_csv('predictions/submission.csv')
+print('Rows:', len(df))                          <span class="comment"># should be 132133</span>
+print('Columns:', list(df.columns))              <span class="comment"># should be ['ID', 'Pred']</span>
+print('Any nulls:', df.isnull().any().any())     <span class="comment"># should be False</span>
+print('Pred range:', df.Pred.min(), 'to', df.Pred.max())  <span class="comment"># should be within [0,1]</span>
+print('Sample IDs:', df.ID.head(3).tolist())     <span class="comment"># should start with 2026_</span>
+"
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 4: Upload to Kaggle -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 4 — Upload to <span>Kaggle</span></h2>
+
+    <div class="form-section">
+      <h3>How to upload your submission</h3>
+      <p class="form-desc">You must be logged in to Kaggle and have accepted the competition rules before you can submit. Follow these steps exactly.</p>
+
+      <div class="checklist-tracker">
+
+        <div class="tracker-item">
+          <div class="t-icon"><span class="step-badge">1</span></div>
+          <div class="t-text">
+            Go to the competition page:
+            <a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026" target="_blank" style="color:var(--accent-blue);">kaggle.com/competitions/march-machine-learning-mania-2026</a>
+          </div>
+          <div class="t-status pending">Do this</div>
+        </div>
+
+        <div class="tracker-item">
+          <div class="t-icon"><span class="step-badge">2</span></div>
+          <div class="t-text">Log in to your Kaggle account. If you don't have one, create a free account at <a href="https://www.kaggle.com" target="_blank" style="color:var(--accent-blue);">kaggle.com</a>.</div>
+          <div class="t-status pending">Do this</div>
+        </div>
+
+        <div class="tracker-item">
+          <div class="t-icon"><span class="step-badge">3</span></div>
+          <div class="t-text">Click <strong>"Join Competition"</strong> and accept the competition rules if you have not already done so. You cannot submit without accepting the rules.</div>
+          <div class="t-status pending">Do this</div>
+        </div>
+
+        <div class="tracker-item">
+          <div class="t-icon"><span class="step-badge">4</span></div>
+          <div class="t-text">Click the <strong>"Submit Predictions"</strong> tab (or the blue "Submit" button on the competition page).</div>
+          <div class="t-status pending">Do this</div>
+        </div>
+
+        <div class="tracker-item">
+          <div class="t-icon"><span class="step-badge">5</span></div>
+          <div class="t-text">Click <strong>"Browse Files"</strong> or drag-and-drop <code>KaggleSubmission.csv</code> into the upload area.</div>
+          <div class="t-status pending">Do this</div>
+        </div>
+
+        <div class="tracker-item">
+          <div class="t-icon"><span class="step-badge">6</span></div>
+          <div class="t-text">(Optional but recommended) Enter a short <strong>Submission Description</strong> so you can identify this version later (e.g., <em>"XGBoost ensemble v3, retrained Mar 16"</em>). Max 500 characters.</div>
+          <div class="t-status pending">Recommended</div>
+        </div>
+
+        <div class="tracker-item">
+          <div class="t-icon"><span class="step-badge">7</span></div>
+          <div class="t-text">Click <strong>"Make Submission"</strong>. Kaggle will validate the file format. If valid, it will appear in your submission list with a score of <strong>0.0</strong> (this is correct — real scoring starts when the tournaments begin).</div>
+          <div class="t-status pending">Do this</div>
+        </div>
+
+      </div>
+
+      <!-- What the Kaggle UI looks like -->
+      <div class="ui-mock" style="margin-top:20px;">
+        <div style="color:white; font-size:0.85rem; font-weight:600; margin-bottom:12px;">📸 What the Kaggle upload form looks like:</div>
+        <div class="ui-row"><span class="ui-label">Competition</span><span class="ui-val">March Machine Learning Mania 2026</span></div>
+        <div class="ui-row"><span class="ui-label">Remaining submissions today</span><span class="ui-val">5 (resets every 24 h)</span></div>
+        <div class="ui-row"><span class="ui-label">Upload area</span><span class="ui-val">"No file chosen — Drag and drop .csv / .zip / .gz / .7z"</span></div>
+        <div class="ui-row"><span class="ui-label">Description box</span><span class="ui-val">0 / 500 characters</span></div>
+        <div class="ui-row"><span class="ui-label">Expected rows</span><span class="ui-val">132,133 rows + header (Kaggle will reject anything else)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 5: Select the submission that counts -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 5 — Select Which Submission <span>Counts</span></h2>
+
+    <div class="form-section">
+      <h3>You must manually select your final submission</h3>
+      <p class="form-desc">Kaggle does <strong>not</strong> automatically pick your best submission. You have up to 5 uploads per day, but only one counts toward the final leaderboard. If you do nothing, Kaggle will use its own automatic selection — <strong>do not rely on this</strong>.</p>
+
+      <div class="warning-banner">
+        <div class="wb-icon">🔴</div>
+        <div>
+          <strong>Critical: Manual selection required.</strong>
+          <p>After uploading, go to the <strong>"My Submissions"</strong> tab and click the checkbox next to the submission you want to use as your official entry. Only the submission you explicitly mark will count toward scoring once the tournament begins.</p>
+        </div>
+      </div>
+
+      <div class="checklist-tracker" style="margin-top:16px;">
+        <div class="tracker-item">
+          <div class="t-icon">📋</div>
+          <div class="t-text">Click the <strong>"My Submissions"</strong> tab on the competition page after uploading.</div>
+          <div class="t-status warn">Important</div>
+        </div>
+        <div class="tracker-item">
+          <div class="t-icon">☑️</div>
+          <div class="t-text">Find the submission you want to count and <strong>check the box</strong> (or click "Use for final score") next to it.</div>
+          <div class="t-status warn">Important</div>
+        </div>
+        <div class="tracker-item">
+          <div class="t-icon">🗓️</div>
+          <div class="t-text">You can re-submit and re-select any time before the tournaments start. After tipoff, selections lock.</div>
+          <div class="t-status pending">Optional</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 6: Daily limit and strategy -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Step 6 — Submission Limit &amp; <span>Strategy</span></h2>
+
+    <div class="form-section">
+      <h3>5 submissions per day</h3>
+      <p class="form-desc">Kaggle enforces a limit of 5 submissions per 24-hour window. Each submission resets the same time of day it was first submitted. Plan accordingly.</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:16px; border:1px solid var(--border);">
+          <h5 style="color:var(--accent-green); margin-bottom:10px; font-size:0.88rem; text-transform:uppercase; letter-spacing:1px;">✅ Good strategy</h5>
+          <ul style="font-size:0.83rem; color:var(--text-secondary); padding-left:16px; line-height:1.9;">
+            <li>Submit the current file once to confirm the format is accepted</li>
+            <li>Save remaining submissions for after retraining or tuning</li>
+            <li>Add a description to each submission so you can compare them</li>
+            <li>Always manually select your best submission before tipoff</li>
+          </ul>
+        </div>
+        <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:16px; border:1px solid var(--border);">
+          <h5 style="color:#ff6b6b; margin-bottom:10px; font-size:0.88rem; text-transform:uppercase; letter-spacing:1px;">❌ Avoid these</h5>
+          <ul style="font-size:0.83rem; color:var(--text-secondary); padding-left:16px; line-height:1.9;">
+            <li>Submitting the same file repeatedly — wastes your daily limit</li>
+            <li>Relying on Kaggle's automatic selection — always pick manually</li>
+            <li>Submitting CMU-format files here — they will be rejected (wrong columns)</li>
+            <li>Forgetting to select your submission before the tournament starts</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Differences from CMU submission — quick reference table -->
+  <section class="section" style="padding: 20px 0 0;">
+    <h2 class="section-title">Kaggle vs CMU — <span>Quick Reference</span></h2>
+    <p class="section-sub">These two competitions are independent. Use the right file for the right platform.</p>
+
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+        <thead>
+          <tr style="background:rgba(255,255,255,0.05);">
+            <th style="padding:12px 16px; text-align:left; color:var(--text-secondary); font-weight:600; border-bottom:1px solid var(--border);">Property</th>
+            <th style="padding:12px 16px; text-align:left; color:var(--cmu-gold); font-weight:600; border-bottom:1px solid var(--border);">🏆 Kaggle (this page)</th>
+            <th style="padding:12px 16px; text-align:left; color:var(--cmu-red); font-weight:600; border-bottom:1px solid var(--border);">🎓 CMU MMML (<a href="submit.html" style="color:var(--cmu-red)">submit.html</a>)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:10px 16px; color:var(--text-secondary);">Website</td>
+            <td style="padding:10px 16px; color:white;">kaggle.com</td>
+            <td style="padding:10px 16px; color:white;">cs.cmu.edu/~reids/mmml/</td>
+          </tr>
+          <tr style="background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:10px 16px; color:var(--text-secondary);">Files</td>
+            <td style="padding:10px 16px; color:white;">1 combined file</td>
+            <td style="padding:10px 16px; color:white;">2 separate files (M + W)</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:10px 16px; color:var(--text-secondary);">File name(s)</td>
+            <td style="padding:10px 16px; color:white;"><code>KaggleSubmission.csv</code></td>
+            <td style="padding:10px 16px; color:white;"><code>MNCAATourneyPredictions.csv</code><br><code>WNCAATourneyPredictions.csv</code></td>
+          </tr>
+          <tr style="background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:10px 16px; color:var(--text-secondary);">Column format</td>
+            <td style="padding:10px 16px; color:white;"><code>ID, Pred</code></td>
+            <td style="padding:10px 16px; color:white;"><code>WTeamID, LTeamID</code></td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:10px 16px; color:var(--text-secondary);">Row count</td>
+            <td style="padding:10px 16px; color:white;">132,133 rows</td>
+            <td style="padding:10px 16px; color:white;">72,010 rows (M) + 71,253 rows (W)</td>
+          </tr>
+          <tr style="background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:10px 16px; color:var(--text-secondary);">What each row represents</td>
+            <td style="padding:10px 16px; color:white;">Win probability for lower-ID team</td>
+            <td style="padding:10px 16px; color:white;">Predicted winner and loser of a matchup</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:10px 16px; color:var(--text-secondary);">Scoring method</td>
+            <td style="padding:10px 16px; color:white;">Brier score (MSE of probabilities)</td>
+            <td style="padding:10px 16px; color:white;">Bracket points (standard NCAA scoring)</td>
+          </tr>
+          <tr style="background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:10px 16px; color:var(--text-secondary);">Submission limit</td>
+            <td style="padding:10px 16px; color:white;">5 per day</td>
+            <td style="padding:10px 16px; color:white;">Once (via team captain before deadline)</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 16px; color:var(--text-secondary);">Who submits</td>
+            <td style="padding:10px 16px; color:white;">Each team member directly on Kaggle</td>
+            <td style="padding:10px 16px; color:white;">Team captain submits on behalf of the group</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Final action buttons -->
+  <section class="section" style="padding: 20px 0 40px;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026/submit" target="_blank" class="btn btn-primary">🏆 Submit on Kaggle</a>
+      <a href="data/KaggleSubmission.csv" download class="btn btn-outline">📥 Download KaggleSubmission.csv</a>
+      <a href="submit.html" class="btn btn-outline" style="border-color:var(--cmu-red); color:var(--cmu-red);">🎓 Go to CMU Submit Page</a>
+    </div>
+  </section>
+
+  <footer>
+    <p>CMU March Madness ML Competition 2026 — <a href="https://github.com/Qrytics/cmuMarchMadness-ML">GitHub</a> · <a href="https://www.cs.cmu.edu/~reids/mmml/">CMU MMML</a> · <a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026" target="_blank">Kaggle Competition</a></p>
+  </footer>
+
+</div>
+
+</body>
+</html>
