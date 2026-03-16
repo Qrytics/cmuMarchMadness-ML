@@ -1,0 +1,68 @@
+Round,RoundName,Team1ID,Team1Name,Team2ID,Team2Name,WinnerID,WinnerName,RoundPoints
+0,First Four,1301,NC State,1400,Texas,1400,Texas,1
+0,First Four,1250,Lehigh,1341,Prairie View,1250,Lehigh,1
+0,First Four,1374,SMU,1275,Miami OH,1374,SMU,1
+0,First Four,1224,Howard,1420,UMBC,1420,UMBC,1
+1,First Round (Round of 64),1181,Duke,1373,Siena,1181,Duke,1
+1,First Round (Round of 64),1326,Ohio St,1395,TCU,1326,Ohio St,1
+1,First Round (Round of 64),1385,St John's,1320,Northern Iowa,1385,St John's,1
+1,First Round (Round of 64),1242,Kansas,1465,Cal Baptist,1242,Kansas,1
+1,First Round (Round of 64),1257,Louisville,1378,South Florida,1257,Louisville,1
+1,First Round (Round of 64),1277,Michigan St,1295,N Dakota St,1277,Michigan St,1
+1,First Round (Round of 64),1417,UCLA,1416,UCF,1417,UCLA,1
+1,First Round (Round of 64),1163,Connecticut,1202,Furman,1163,Connecticut,1
+1,First Round (Round of 64),1112,Arizona,1254,LIU Brooklyn,1112,Arizona,1
+1,First Round (Round of 64),1437,Villanova,1429,Utah St,1437,Villanova,1
+1,First Round (Round of 64),1458,Wisconsin,1219,High Point,1458,Wisconsin,1
+1,First Round (Round of 64),1116,Arkansas,1218,Hawaii,1116,Arkansas,1
+1,First Round (Round of 64),1140,BYU,1400,Texas,1140,BYU,1
+1,First Round (Round of 64),1211,Gonzaga,1244,Kennesaw,1211,Gonzaga,1
+1,First Round (Round of 64),1274,Miami FL,1281,Missouri,1274,Miami FL,1
+1,First Round (Round of 64),1345,Purdue,1474,Queens NC,1345,Purdue,1
+1,First Round (Round of 64),1196,Florida,1250,Lehigh,1196,Florida,1
+1,First Round (Round of 64),1155,Clemson,1234,Iowa,1234,Iowa,1
+1,First Round (Round of 64),1435,Vanderbilt,1270,McNeese St,1435,Vanderbilt,1
+1,First Round (Round of 64),1304,Nebraska,1407,Troy,1304,Nebraska,1
+1,First Round (Round of 64),1314,North Carolina,1433,VCU,1314,North Carolina,1
+1,First Round (Round of 64),1228,Illinois,1335,Penn,1228,Illinois,1
+1,First Round (Round of 64),1388,St Mary's CA,1401,Texas A&M,1388,St Mary's CA,1
+1,First Round (Round of 64),1222,Houston,1225,Idaho,1222,Houston,1
+1,First Round (Round of 64),1276,Michigan,1420,UMBC,1276,Michigan,1
+1,First Round (Round of 64),1208,Georgia,1387,St Louis,1387,St Louis,1
+1,First Round (Round of 64),1403,Texas Tech,1103,Akron,1403,Texas Tech,1
+1,First Round (Round of 64),1104,Alabama,1220,Hofstra,1104,Alabama,1
+1,First Round (Round of 64),1397,Tennessee,1374,SMU,1397,Tennessee,1
+1,First Round (Round of 64),1438,Virginia,1460,Wright St,1438,Virginia,1
+1,First Round (Round of 64),1246,Kentucky,1365,Santa Clara,1365,Santa Clara,1
+1,First Round (Round of 64),1235,Iowa St,1398,Tennessee St,1235,Iowa St,1
+2,Second Round (Round of 32),1181,Duke,1326,Ohio St,1181,Duke,2
+2,Second Round (Round of 32),1385,St John's,1242,Kansas,1242,Kansas,2
+2,Second Round (Round of 32),1257,Louisville,1277,Michigan St,1277,Michigan St,2
+2,Second Round (Round of 32),1417,UCLA,1163,Connecticut,1163,Connecticut,2
+2,Second Round (Round of 32),1112,Arizona,1437,Villanova,1112,Arizona,2
+2,Second Round (Round of 32),1458,Wisconsin,1116,Arkansas,1458,Wisconsin,2
+2,Second Round (Round of 32),1140,BYU,1211,Gonzaga,1211,Gonzaga,2
+2,Second Round (Round of 32),1274,Miami FL,1345,Purdue,1345,Purdue,2
+2,Second Round (Round of 32),1196,Florida,1234,Iowa,1196,Florida,2
+2,Second Round (Round of 32),1435,Vanderbilt,1304,Nebraska,1435,Vanderbilt,2
+2,Second Round (Round of 32),1314,North Carolina,1228,Illinois,1228,Illinois,2
+2,Second Round (Round of 32),1388,St Mary's CA,1222,Houston,1222,Houston,2
+2,Second Round (Round of 32),1276,Michigan,1387,St Louis,1276,Michigan,2
+2,Second Round (Round of 32),1403,Texas Tech,1104,Alabama,1403,Texas Tech,2
+2,Second Round (Round of 32),1397,Tennessee,1438,Virginia,1397,Tennessee,2
+2,Second Round (Round of 32),1365,Santa Clara,1235,Iowa St,1235,Iowa St,2
+3,Sweet 16,1181,Duke,1242,Kansas,1181,Duke,4
+3,Sweet 16,1277,Michigan St,1163,Connecticut,1163,Connecticut,4
+3,Sweet 16,1112,Arizona,1458,Wisconsin,1112,Arizona,4
+3,Sweet 16,1211,Gonzaga,1345,Purdue,1211,Gonzaga,4
+3,Sweet 16,1196,Florida,1435,Vanderbilt,1196,Florida,4
+3,Sweet 16,1228,Illinois,1222,Houston,1228,Illinois,4
+3,Sweet 16,1276,Michigan,1403,Texas Tech,1276,Michigan,4
+3,Sweet 16,1397,Tennessee,1235,Iowa St,1235,Iowa St,4
+4,Elite Eight,1181,Duke,1163,Connecticut,1181,Duke,8
+4,Elite Eight,1112,Arizona,1211,Gonzaga,1112,Arizona,8
+4,Elite Eight,1196,Florida,1228,Illinois,1196,Florida,8
+4,Elite Eight,1276,Michigan,1235,Iowa St,1276,Michigan,8
+5,Final Four,1181,Duke,1112,Arizona,1181,Duke,16
+5,Final Four,1196,Florida,1276,Michigan,1196,Florida,16
+6,National Championship,1181,Duke,1196,Florida,1181,Duke,32
