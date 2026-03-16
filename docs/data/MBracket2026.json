@@ -1,0 +1,651 @@
+{
+  "gender": "M",
+  "season": 2026,
+  "rounds": [
+    {
+      "round": 0,
+      "round_name": "First Four",
+      "games": [
+        {
+          "team1_id": 1301,
+          "team1_name": "NC State",
+          "team2_id": 1400,
+          "team2_name": "Texas",
+          "predicted_winner_id": 1400,
+          "predicted_winner_name": "Texas",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1250,
+          "team1_name": "Lehigh",
+          "team2_id": 1341,
+          "team2_name": "Prairie View",
+          "predicted_winner_id": 1250,
+          "predicted_winner_name": "Lehigh",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1374,
+          "team1_name": "SMU",
+          "team2_id": 1275,
+          "team2_name": "Miami OH",
+          "predicted_winner_id": 1374,
+          "predicted_winner_name": "SMU",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1224,
+          "team1_name": "Howard",
+          "team2_id": 1420,
+          "team2_name": "UMBC",
+          "predicted_winner_id": 1420,
+          "predicted_winner_name": "UMBC",
+          "round_points": 1
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "round_name": "First Round (Round of 64)",
+      "games": [
+        {
+          "team1_id": 1181,
+          "team1_name": "Duke",
+          "team2_id": 1373,
+          "team2_name": "Siena",
+          "predicted_winner_id": 1181,
+          "predicted_winner_name": "Duke",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1326,
+          "team1_name": "Ohio St",
+          "team2_id": 1395,
+          "team2_name": "TCU",
+          "predicted_winner_id": 1326,
+          "predicted_winner_name": "Ohio St",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1385,
+          "team1_name": "St John's",
+          "team2_id": 1320,
+          "team2_name": "Northern Iowa",
+          "predicted_winner_id": 1385,
+          "predicted_winner_name": "St John's",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1242,
+          "team1_name": "Kansas",
+          "team2_id": 1465,
+          "team2_name": "Cal Baptist",
+          "predicted_winner_id": 1242,
+          "predicted_winner_name": "Kansas",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1257,
+          "team1_name": "Louisville",
+          "team2_id": 1378,
+          "team2_name": "South Florida",
+          "predicted_winner_id": 1257,
+          "predicted_winner_name": "Louisville",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1277,
+          "team1_name": "Michigan St",
+          "team2_id": 1295,
+          "team2_name": "N Dakota St",
+          "predicted_winner_id": 1277,
+          "predicted_winner_name": "Michigan St",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1417,
+          "team1_name": "UCLA",
+          "team2_id": 1416,
+          "team2_name": "UCF",
+          "predicted_winner_id": 1417,
+          "predicted_winner_name": "UCLA",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1163,
+          "team1_name": "Connecticut",
+          "team2_id": 1202,
+          "team2_name": "Furman",
+          "predicted_winner_id": 1163,
+          "predicted_winner_name": "Connecticut",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1112,
+          "team1_name": "Arizona",
+          "team2_id": 1254,
+          "team2_name": "LIU Brooklyn",
+          "predicted_winner_id": 1112,
+          "predicted_winner_name": "Arizona",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1437,
+          "team1_name": "Villanova",
+          "team2_id": 1429,
+          "team2_name": "Utah St",
+          "predicted_winner_id": 1437,
+          "predicted_winner_name": "Villanova",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1458,
+          "team1_name": "Wisconsin",
+          "team2_id": 1219,
+          "team2_name": "High Point",
+          "predicted_winner_id": 1458,
+          "predicted_winner_name": "Wisconsin",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1116,
+          "team1_name": "Arkansas",
+          "team2_id": 1218,
+          "team2_name": "Hawaii",
+          "predicted_winner_id": 1116,
+          "predicted_winner_name": "Arkansas",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1140,
+          "team1_name": "BYU",
+          "team2_id": 1400,
+          "team2_name": "Texas",
+          "predicted_winner_id": 1140,
+          "predicted_winner_name": "BYU",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1211,
+          "team1_name": "Gonzaga",
+          "team2_id": 1244,
+          "team2_name": "Kennesaw",
+          "predicted_winner_id": 1211,
+          "predicted_winner_name": "Gonzaga",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1274,
+          "team1_name": "Miami FL",
+          "team2_id": 1281,
+          "team2_name": "Missouri",
+          "predicted_winner_id": 1274,
+          "predicted_winner_name": "Miami FL",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1345,
+          "team1_name": "Purdue",
+          "team2_id": 1474,
+          "team2_name": "Queens NC",
+          "predicted_winner_id": 1345,
+          "predicted_winner_name": "Purdue",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1196,
+          "team1_name": "Florida",
+          "team2_id": 1250,
+          "team2_name": "Lehigh",
+          "predicted_winner_id": 1196,
+          "predicted_winner_name": "Florida",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1155,
+          "team1_name": "Clemson",
+          "team2_id": 1234,
+          "team2_name": "Iowa",
+          "predicted_winner_id": 1234,
+          "predicted_winner_name": "Iowa",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1435,
+          "team1_name": "Vanderbilt",
+          "team2_id": 1270,
+          "team2_name": "McNeese St",
+          "predicted_winner_id": 1435,
+          "predicted_winner_name": "Vanderbilt",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1304,
+          "team1_name": "Nebraska",
+          "team2_id": 1407,
+          "team2_name": "Troy",
+          "predicted_winner_id": 1304,
+          "predicted_winner_name": "Nebraska",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1314,
+          "team1_name": "North Carolina",
+          "team2_id": 1433,
+          "team2_name": "VCU",
+          "predicted_winner_id": 1314,
+          "predicted_winner_name": "North Carolina",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1228,
+          "team1_name": "Illinois",
+          "team2_id": 1335,
+          "team2_name": "Penn",
+          "predicted_winner_id": 1228,
+          "predicted_winner_name": "Illinois",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1388,
+          "team1_name": "St Mary's CA",
+          "team2_id": 1401,
+          "team2_name": "Texas A&M",
+          "predicted_winner_id": 1388,
+          "predicted_winner_name": "St Mary's CA",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1222,
+          "team1_name": "Houston",
+          "team2_id": 1225,
+          "team2_name": "Idaho",
+          "predicted_winner_id": 1222,
+          "predicted_winner_name": "Houston",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1276,
+          "team1_name": "Michigan",
+          "team2_id": 1420,
+          "team2_name": "UMBC",
+          "predicted_winner_id": 1276,
+          "predicted_winner_name": "Michigan",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1208,
+          "team1_name": "Georgia",
+          "team2_id": 1387,
+          "team2_name": "St Louis",
+          "predicted_winner_id": 1387,
+          "predicted_winner_name": "St Louis",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1403,
+          "team1_name": "Texas Tech",
+          "team2_id": 1103,
+          "team2_name": "Akron",
+          "predicted_winner_id": 1403,
+          "predicted_winner_name": "Texas Tech",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1104,
+          "team1_name": "Alabama",
+          "team2_id": 1220,
+          "team2_name": "Hofstra",
+          "predicted_winner_id": 1104,
+          "predicted_winner_name": "Alabama",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1397,
+          "team1_name": "Tennessee",
+          "team2_id": 1374,
+          "team2_name": "SMU",
+          "predicted_winner_id": 1397,
+          "predicted_winner_name": "Tennessee",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1438,
+          "team1_name": "Virginia",
+          "team2_id": 1460,
+          "team2_name": "Wright St",
+          "predicted_winner_id": 1438,
+          "predicted_winner_name": "Virginia",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1246,
+          "team1_name": "Kentucky",
+          "team2_id": 1365,
+          "team2_name": "Santa Clara",
+          "predicted_winner_id": 1365,
+          "predicted_winner_name": "Santa Clara",
+          "round_points": 1
+        },
+        {
+          "team1_id": 1235,
+          "team1_name": "Iowa St",
+          "team2_id": 1398,
+          "team2_name": "Tennessee St",
+          "predicted_winner_id": 1235,
+          "predicted_winner_name": "Iowa St",
+          "round_points": 1
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "round_name": "Second Round (Round of 32)",
+      "games": [
+        {
+          "team1_id": 1181,
+          "team1_name": "Duke",
+          "team2_id": 1326,
+          "team2_name": "Ohio St",
+          "predicted_winner_id": 1181,
+          "predicted_winner_name": "Duke",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1385,
+          "team1_name": "St John's",
+          "team2_id": 1242,
+          "team2_name": "Kansas",
+          "predicted_winner_id": 1242,
+          "predicted_winner_name": "Kansas",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1257,
+          "team1_name": "Louisville",
+          "team2_id": 1277,
+          "team2_name": "Michigan St",
+          "predicted_winner_id": 1277,
+          "predicted_winner_name": "Michigan St",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1417,
+          "team1_name": "UCLA",
+          "team2_id": 1163,
+          "team2_name": "Connecticut",
+          "predicted_winner_id": 1163,
+          "predicted_winner_name": "Connecticut",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1112,
+          "team1_name": "Arizona",
+          "team2_id": 1437,
+          "team2_name": "Villanova",
+          "predicted_winner_id": 1112,
+          "predicted_winner_name": "Arizona",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1458,
+          "team1_name": "Wisconsin",
+          "team2_id": 1116,
+          "team2_name": "Arkansas",
+          "predicted_winner_id": 1458,
+          "predicted_winner_name": "Wisconsin",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1140,
+          "team1_name": "BYU",
+          "team2_id": 1211,
+          "team2_name": "Gonzaga",
+          "predicted_winner_id": 1211,
+          "predicted_winner_name": "Gonzaga",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1274,
+          "team1_name": "Miami FL",
+          "team2_id": 1345,
+          "team2_name": "Purdue",
+          "predicted_winner_id": 1345,
+          "predicted_winner_name": "Purdue",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1196,
+          "team1_name": "Florida",
+          "team2_id": 1234,
+          "team2_name": "Iowa",
+          "predicted_winner_id": 1196,
+          "predicted_winner_name": "Florida",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1435,
+          "team1_name": "Vanderbilt",
+          "team2_id": 1304,
+          "team2_name": "Nebraska",
+          "predicted_winner_id": 1435,
+          "predicted_winner_name": "Vanderbilt",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1314,
+          "team1_name": "North Carolina",
+          "team2_id": 1228,
+          "team2_name": "Illinois",
+          "predicted_winner_id": 1228,
+          "predicted_winner_name": "Illinois",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1388,
+          "team1_name": "St Mary's CA",
+          "team2_id": 1222,
+          "team2_name": "Houston",
+          "predicted_winner_id": 1222,
+          "predicted_winner_name": "Houston",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1276,
+          "team1_name": "Michigan",
+          "team2_id": 1387,
+          "team2_name": "St Louis",
+          "predicted_winner_id": 1276,
+          "predicted_winner_name": "Michigan",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1403,
+          "team1_name": "Texas Tech",
+          "team2_id": 1104,
+          "team2_name": "Alabama",
+          "predicted_winner_id": 1403,
+          "predicted_winner_name": "Texas Tech",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1397,
+          "team1_name": "Tennessee",
+          "team2_id": 1438,
+          "team2_name": "Virginia",
+          "predicted_winner_id": 1397,
+          "predicted_winner_name": "Tennessee",
+          "round_points": 2
+        },
+        {
+          "team1_id": 1365,
+          "team1_name": "Santa Clara",
+          "team2_id": 1235,
+          "team2_name": "Iowa St",
+          "predicted_winner_id": 1235,
+          "predicted_winner_name": "Iowa St",
+          "round_points": 2
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "round_name": "Sweet 16",
+      "games": [
+        {
+          "team1_id": 1181,
+          "team1_name": "Duke",
+          "team2_id": 1242,
+          "team2_name": "Kansas",
+          "predicted_winner_id": 1181,
+          "predicted_winner_name": "Duke",
+          "round_points": 4
+        },
+        {
+          "team1_id": 1277,
+          "team1_name": "Michigan St",
+          "team2_id": 1163,
+          "team2_name": "Connecticut",
+          "predicted_winner_id": 1163,
+          "predicted_winner_name": "Connecticut",
+          "round_points": 4
+        },
+        {
+          "team1_id": 1112,
+          "team1_name": "Arizona",
+          "team2_id": 1458,
+          "team2_name": "Wisconsin",
+          "predicted_winner_id": 1112,
+          "predicted_winner_name": "Arizona",
+          "round_points": 4
+        },
+        {
+          "team1_id": 1211,
+          "team1_name": "Gonzaga",
+          "team2_id": 1345,
+          "team2_name": "Purdue",
+          "predicted_winner_id": 1211,
+          "predicted_winner_name": "Gonzaga",
+          "round_points": 4
+        },
+        {
+          "team1_id": 1196,
+          "team1_name": "Florida",
+          "team2_id": 1435,
+          "team2_name": "Vanderbilt",
+          "predicted_winner_id": 1196,
+          "predicted_winner_name": "Florida",
+          "round_points": 4
+        },
+        {
+          "team1_id": 1228,
+          "team1_name": "Illinois",
+          "team2_id": 1222,
+          "team2_name": "Houston",
+          "predicted_winner_id": 1228,
+          "predicted_winner_name": "Illinois",
+          "round_points": 4
+        },
+        {
+          "team1_id": 1276,
+          "team1_name": "Michigan",
+          "team2_id": 1403,
+          "team2_name": "Texas Tech",
+          "predicted_winner_id": 1276,
+          "predicted_winner_name": "Michigan",
+          "round_points": 4
+        },
+        {
+          "team1_id": 1397,
+          "team1_name": "Tennessee",
+          "team2_id": 1235,
+          "team2_name": "Iowa St",
+          "predicted_winner_id": 1235,
+          "predicted_winner_name": "Iowa St",
+          "round_points": 4
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "round_name": "Elite Eight",
+      "games": [
+        {
+          "team1_id": 1181,
+          "team1_name": "Duke",
+          "team2_id": 1163,
+          "team2_name": "Connecticut",
+          "predicted_winner_id": 1181,
+          "predicted_winner_name": "Duke",
+          "round_points": 8
+        },
+        {
+          "team1_id": 1112,
+          "team1_name": "Arizona",
+          "team2_id": 1211,
+          "team2_name": "Gonzaga",
+          "predicted_winner_id": 1112,
+          "predicted_winner_name": "Arizona",
+          "round_points": 8
+        },
+        {
+          "team1_id": 1196,
+          "team1_name": "Florida",
+          "team2_id": 1228,
+          "team2_name": "Illinois",
+          "predicted_winner_id": 1196,
+          "predicted_winner_name": "Florida",
+          "round_points": 8
+        },
+        {
+          "team1_id": 1276,
+          "team1_name": "Michigan",
+          "team2_id": 1235,
+          "team2_name": "Iowa St",
+          "predicted_winner_id": 1276,
+          "predicted_winner_name": "Michigan",
+          "round_points": 8
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "round_name": "Final Four",
+      "games": [
+        {
+          "team1_id": 1181,
+          "team1_name": "Duke",
+          "team2_id": 1112,
+          "team2_name": "Arizona",
+          "predicted_winner_id": 1181,
+          "predicted_winner_name": "Duke",
+          "round_points": 16
+        },
+        {
+          "team1_id": 1196,
+          "team1_name": "Florida",
+          "team2_id": 1276,
+          "team2_name": "Michigan",
+          "predicted_winner_id": 1196,
+          "predicted_winner_name": "Florida",
+          "round_points": 16
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "round_name": "National Championship",
+      "games": [
+        {
+          "team1_id": 1181,
+          "team1_name": "Duke",
+          "team2_id": 1196,
+          "team2_name": "Florida",
+          "predicted_winner_id": 1181,
+          "predicted_winner_name": "Duke",
+          "round_points": 32
+        }
+      ]
+    }
+  ]
+}

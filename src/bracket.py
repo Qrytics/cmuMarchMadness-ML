@@ -74,32 +74,32 @@ class Bracket:
         """
         bracket = {}
 
-        # Handle play-in for seeds 16
+        # Handle First Four play-in games for ANY seed (e.g., 11, 12, 16).
+        # Seeds with two play-in teams are stored as "{region}{seed:02d}a" and
+        # "{region}{seed:02d}b" in the seeds file.  The winner advances into the
+        # main bracket slot for that seed.
         for region in REGIONS:
-            for play_in_letter in ["a", "b"]:
-                slot_a = f"{region}16{play_in_letter}"
+            for seed_num in range(1, 17):
+                slot_a = f"{region}{seed_num:02d}a"
+                slot_b = f"{region}{seed_num:02d}b"
                 t_a = self.seed_to_team.get(slot_a)
-                slot_b_partner = f"{region}16{'b' if play_in_letter == 'a' else 'a'}"
-                t_b = self.seed_to_team.get(slot_b_partner)
-                if t_a and t_b and play_in_letter == "a":
+                t_b = self.seed_to_team.get(slot_b)
+                if t_a and t_b:
                     winner = self.predict_matchup(t_a, t_b)
-                    bracket[(region, 16)] = winner
-                    break
-            else:
-                slot = f"{region}16"
-                t = self.seed_to_team.get(slot)
-                if t:
-                    bracket[(region, 16)] = t
+                    bracket[(region, seed_num)] = winner
+                    games_first_four = getattr(self, "_first_four_games", [])
+                    games_first_four.append((0, t_a, t_b, winner))
+                    self._first_four_games = games_first_four
+                else:
+                    # Direct placement (no play-in)
+                    slot = f"{region}{seed_num:02d}"
+                    t = self.seed_to_team.get(slot)
+                    if t:
+                        bracket[(region, seed_num)] = t
 
-        # Initialize bracket with seeded teams
-        for region in REGIONS:
-            for seed_num in range(1, 16):
-                slot = f"{region}{seed_num:02d}"
-                t = self.seed_to_team.get(slot)
-                if t:
-                    bracket[(region, seed_num)] = t
+        first_four = getattr(self, "_first_four_games", [])
 
-        games = []
+        games = first_four[:]  # Start with First Four games (round 0)
 
         # Round 1: 32 games across 4 regions
         r1_winners = {}
