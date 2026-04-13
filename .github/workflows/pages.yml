@@ -1,12 +1,6 @@
 name: Deploy GitHub Pages
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "docs/**"
-      - "models/**"
-      - "predictions/**"
   workflow_dispatch:
 
 # Allow only one concurrent deployment
