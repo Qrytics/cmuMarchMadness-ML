@@ -19,6 +19,7 @@ on:
 jobs:
   train-and-predict:
     name: Train Models + Generate Predictions
+    if: ${{ false }}
     runs-on: ubuntu-latest
 
     steps:
