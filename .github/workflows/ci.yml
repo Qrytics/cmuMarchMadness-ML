@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     name: Run Tests
+    # Disabled to stop all GitHub Actions execution for this repository.
+    # Remove this guard to re-enable CI.
     if: false
     runs-on: ubuntu-latest
 
