@@ -11,6 +11,9 @@ concurrency:
 jobs:
   deploy:
     name: Build & Deploy to GitHub Pages
+    # Disabled to stop all GitHub Actions execution for this repository.
+    # Remove this guard to re-enable Pages deployment.
+    if: false
     runs-on: ubuntu-latest
     environment:
       name: github-pages

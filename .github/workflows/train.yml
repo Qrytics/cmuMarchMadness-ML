@@ -19,6 +19,9 @@ on:
 jobs:
   train-and-predict:
     name: Train Models + Generate Predictions
+    # Disabled to stop all GitHub Actions execution for this repository.
+    # Remove this guard to re-enable scheduled/manual training.
+    if: false
     runs-on: ubuntu-latest
 
     steps:
